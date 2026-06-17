@@ -4,74 +4,645 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Central | Estoque + Pricing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
-:root{
-  --text:#202124;--muted:#5f6368;--border:#dadce0;--line:#edf0f2;
-  --blue:#0b57d0;--green:#cfeee7;--greenText:#08705e;
-  --yellow:#f8e7a1;--yellowText:#8a6a00;--red:#fce8e6;--redText:#b3261e;
+:root {
+  --text: #1C1B1F;
+  --muted: #6B7280;
+  --subtle: #9CA3AF;
+
+  --primary: #1C1B1F;
+  --primary-hover: #374151;
+
+  --blue: #1A73E8;
+  --blue-soft: #E8F0FE;
+  --blue-soft-text: #1558B0;
+
+  --green: #E8F5E9;
+  --greenText: #137333;
+  --yellow: #FEF9E7;
+  --yellowText: #B45309;
+  --red: #FDECEA;
+  --redText: #B3261E;
+
+  --amber-soft: #FFF3E0;
+  --amber-soft-text: #BF360C;
+
+  --neutral: #F3F4F6;
+  --neutralText: #4B5563;
+  --purple-soft: #F3E8FD;
+  --purple-soft-text: #6D28D9;
+
+  --border: #E0E0E0;
+  --line: #EEEFF0;
+  --surface: #FFFFFF;
+  --surface2: #F9FAFB;
+  --bg: #F6F8FA;
 }
-*{box-sizing:border-box}
-body{margin:0;font-family:Inter,Arial,sans-serif;background:#fff;color:var(--text)}
-.app{display:flex;min-height:100vh}
-.sidebar{width:60px;border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:18px 0;gap:22px}
-.navIcon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center}
-.navIcon.active{background:#f1f3f4}
-.main{flex:1;padding:34px 36px 48px}
-.breadcrumb{color:var(--blue);font-size:14px;margin-bottom:24px}
-h1{margin:0 0 16px;font-size:32px;letter-spacing:-.03em}
-.locationBanner{display:flex;justify-content:space-between;border:1px solid var(--border);border-radius:8px;padding:14px 18px;margin-bottom:22px;background:#fafafa}
-.locationBanner span,.sub,.helper{color:var(--muted);font-size:13px}
-.tabs,.detailTabs{display:flex;gap:28px;border-bottom:1px solid var(--border);margin-bottom:24px}
-.tab,.detailTab{padding-bottom:10px;font-weight:700;color:#6b7280;cursor:pointer}
-.tab.active,.detailTab.active{color:#111;border-bottom:2px solid #111}
-.kpis{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--border);border-radius:8px;margin-bottom:24px}
-.kpi{padding:18px 24px;border-right:1px solid var(--line)}
-.kpi:last-child{border-right:0}.kpi span{display:block;color:#9aa0a6;font-size:13px}.kpi strong{display:block;font-size:28px;margin-top:6px}
-.filters{display:grid;grid-template-columns:1.7fr repeat(4,1fr) auto;gap:16px;margin-bottom:20px;align-items:end}
-label{font-size:13px;font-weight:700;display:block;margin-bottom:7px}
-input,select{width:100%;height:40px;border:1px solid #bfc3c7;border-radius:8px;padding:0 12px;background:white;font-size:14px}
-button{height:40px;border:1px solid #111;border-radius:8px;background:#111;color:#fff;padding:0 14px;cursor:pointer;font-weight:700}
-button.secondary{background:white;color:#111;border-color:#bfc3c7}
-.table{border:1px solid var(--border);border-radius:8px;overflow:hidden;background:#fff}
-.row{display:grid;grid-template-columns:2fr .7fr 1.1fr .55fr .55fr .55fr .7fr .7fr 170px;gap:14px;align-items:center;min-height:72px;padding:0 20px;border-bottom:1px solid var(--line);font-size:14px;cursor:pointer}
-.row.header{min-height:44px;font-weight:700;color:#3c4043;background:#fafafa;cursor:default}
-.row:hover:not(.header){background:#fafafa}
-.phone{display:flex;align-items:center;gap:12px}.thumb{width:38px;height:48px;border:2px solid #7c7c7c;border-radius:7px;background:linear-gradient(145deg,#f8f8f8,#e8e8e8)}
-.productName{font-weight:700;margin-bottom:4px}
-.colors{display:flex;gap:6px;flex-wrap:wrap}.colorDot{min-width:30px;height:30px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;border:2px solid #fff;box-shadow:0 0 0 1px #ccc}
-.black{background:#202124;color:#fff}.white{background:#fff;color:#111}.blue{background:#4976d1;color:#fff}.green{background:#63b978;color:#fff}.gray{background:#8a8f98;color:#fff}.purple{background:#8e5bd7;color:#fff}.gold{background:#d7b56d;color:#111}.orange{background:#e67e22;color:#fff}
-.badge{display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:24px;border-radius:999px;padding:0 10px;font-size:13px;font-weight:700}
-.pos{background:var(--green);color:var(--greenText)}.warn{background:var(--yellow);color:var(--yellowText)}.neg{background:var(--red);color:var(--redText)}
-.actionGroup{display:flex;gap:8px}.actionGroup button{height:32px;font-size:12px;padding:0 10px}
-.detail{display:none}.detail.active{display:block}.back{color:var(--blue);cursor:pointer;margin-bottom:24px;display:inline-flex}
-.hero{display:grid;grid-template-columns:220px 1fr;gap:32px;margin-bottom:30px}.productPhoto{width:200px;height:260px;border:3px solid #777;border-radius:26px;background:linear-gradient(145deg,#f8f8f8,#e9e9e9)}
-.detailCards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:20px 0}.card{border:1px solid var(--border);border-radius:8px;padding:16px}.card span{color:#6b7280;font-size:13px}.card strong{display:block;font-size:26px;margin-top:6px}
-.panel{display:none}.panel.active{display:block}.miniTable{width:100%;border-collapse:collapse;border:1px solid var(--border)}.miniTable th,.miniTable td{padding:12px;border-bottom:1px solid var(--line);text-align:left;font-size:14px}.miniTable th{background:#fafafa}
-.drawer,.modal{position:fixed;background:#fff;z-index:20;box-shadow:0 0 40px rgba(0,0,0,.16)}
-.drawer{right:-460px;top:0;width:460px;height:100%;padding:28px;transition:.25s;border-left:1px solid var(--border)}
-.drawer.open{right:0}.drawer h2{margin-top:0}.field{margin-bottom:16px}
-.modal{display:none;left:50%;top:50%;transform:translate(-50%,-50%);width:760px;max-width:92vw;border-radius:12px;padding:28px;border:1px solid var(--border)}
-.modal.open{display:block}.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.28);z-index:15}.overlay.open{display:block}
-.status{font-size:12px;font-weight:700;border-radius:999px;padding:6px 10px;width:max-content}.activeStatus{background:#e6f4ea;color:#137333}.hiddenStatus{background:#fce8e6;color:#b3261e}
-@media(max-width:1200px){.row{grid-template-columns:1.6fr .6fr .9fr .5fr .5fr .5fr .6fr 140px}.hideSmall{display:none}.filters{grid-template-columns:1fr 1fr}}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─── Layout ─────────────────────────────────── */
+.app { display: flex; min-height: 100vh; }
+
+.sidebar {
+  width: 56px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--border);
+  background: #FBFCFE;
+  display: flex;
+  flex-direction: column;
+  padding: 16px 8px;
+  gap: 2px;
+  overflow: hidden;
+  transition: width 0.2s ease;
+}
+.sidebar.expanded { width: 220px; }
+
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 500;
+  border: 1px solid transparent;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+  min-width: 0;
+}
+.navItem:hover { background: var(--line); color: var(--text); }
+.navItem.active { border-color: var(--border); color: var(--text); background: transparent; }
+.navItem svg { flex-shrink: 0; }
+
+.navLabel {
+  opacity: 0;
+  width: 0;
+  overflow: hidden;
+  transition: opacity 0.15s ease, width 0.2s ease;
+  pointer-events: none;
+}
+.sidebar.expanded .navLabel {
+  opacity: 1;
+  width: auto;
+  pointer-events: auto;
+}
+
+.navToggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--muted);
+  transition: background 0.15s, color 0.15s;
+  margin-bottom: 6px;
+  flex-shrink: 0;
+}
+.navToggle:hover { background: var(--line); color: var(--text); }
+
+.main {
+  flex: 1;
+  padding: 32px 40px 64px 32px;
+  overflow: auto;
+}
+
+/* ─── Breadcrumb ──────────────────────────────── */
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 13px;
+  margin-bottom: 20px;
+}
+.breadcrumb svg { color: var(--subtle); flex-shrink: 0; }
+.breadcrumb .link { cursor: pointer; }
+.breadcrumb .link:hover { color: var(--text); }
+
+/* ─── Heading ─────────────────────────────────── */
+h1 {
+  margin: 0 0 24px;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+/* ─── Location banner ─────────────────────────── */
+.locationBanner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 20px;
+  margin-bottom: 24px;
+  background: var(--surface);
+}
+.locationBanner strong { font-weight: 600; font-size: 14px; }
+.sub, .helper { color: var(--muted); font-size: 13px; }
+.helper { margin: 0; }
+
+/* ─── Tabs ────────────────────────────────────── */
+.tabs, .detailTabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 24px;
+}
+.tab, .detailTab {
+  padding: 10px 16px;
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color 0.15s;
+}
+.tab:hover, .detailTab:hover { color: var(--text); }
+.tab.active, .detailTab.active { color: var(--text); border-bottom-color: var(--text); font-weight: 600; }
+
+/* ─── KPIs ────────────────────────────────────── */
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 24px;
+  background: var(--surface);
+  overflow: hidden;
+}
+.kpi {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 20px;
+  border-right: 1px solid var(--line);
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.kpi:last-child { border-right: 0; }
+.kpi:hover { background: var(--surface2); }
+.kpiIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--text);
+}
+.kpiBody { display: flex; flex-direction: column; gap: 2px; }
+.kpi span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+}
+.kpi strong {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+/* ─── Filters ─────────────────────────────────── */
+.filters {
+  display: grid;
+  grid-template-columns: 1.8fr repeat(5, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+  align-items: end;
+}
+
+label {
+  font-size: 11px;
+  font-weight: 600;
+  display: block;
+  margin-bottom: 6px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+input, select {
+  width: 100%;
+  height: 40px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0 12px;
+  background: var(--surface);
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+input:focus, select:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.12);
+}
+
+/* ─── Buttons ─────────────────────────────────── */
+button {
+  height: 40px;
+  border: none;
+  border-radius: 8px;
+  padding: 0 18px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  font-family: inherit;
+  transition: background 0.15s;
+  background: var(--primary);
+  color: #fff;
+}
+button:hover { background: var(--primary-hover); }
+
+button.secondary {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+button.secondary:hover { background: var(--line); }
+
+/* ─── Table (list) ────────────────────────────── */
+.table {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--surface);
+}
+.row {
+  display: grid;
+  grid-template-columns: 2fr .7fr 1.1fr .55fr .55fr .55fr .7fr;
+  gap: 14px;
+  align-items: center;
+  min-height: 58px;
+  padding: 0 20px;
+  border-bottom: 1px solid var(--line);
+  font-size: 14px;
+  cursor: pointer;
+}
+.row:last-child { border-bottom: 0; }
+.row.header {
+  min-height: 40px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: var(--surface2);
+  cursor: default;
+}
+.row:hover:not(.header) { background: var(--surface2); }
+
+.phone { display: flex; align-items: center; gap: 12px; }
+.thumb {
+  width: 32px;
+  height: 42px;
+  border-radius: 6px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.productName { font-weight: 600; margin-bottom: 2px; }
+
+/* ─── Color dots ──────────────────────────────── */
+.colors { display: flex; gap: 5px; flex-wrap: wrap; }
+.colorDot {
+  min-width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  border: 2px solid rgba(255,255,255,0.9);
+  box-shadow: 0 0 0 1.5px rgba(0,0,0,0.12);
+}
+.black { background: #1C1B1F; color: #fff; }
+.white { background: #fff; color: #1C1B1F; }
+.blue  { background: #4976D1; color: #fff; }
+.green { background: #4CAF7D; color: #fff; }
+.gray  { background: #6B7280; color: #fff; }
+.purple{ background: #7C3AED; color: #fff; }
+.gold  { background: #D4A017; color: #fff; }
+.orange{ background: #E67E22; color: #fff; }
+
+/* ─── Balance badge ───────────────────────────── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 24px;
+  border-radius: 999px;
+  padding: 0 10px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.pos { background: var(--green);  color: var(--greenText); }
+.warn{ background: var(--yellow); color: var(--yellowText); }
+.neg { background: var(--red);    color: var(--redText); }
+
+/* ─── Detail page ─────────────────────────────── */
+.detail { display: none; }
+.detail.active { display: block; }
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--muted);
+  cursor: pointer;
+  margin-bottom: 16px;
+  font-size: 14px;
+  font-weight: 500;
+}
+.back:hover { color: var(--text); }
+
+.hero {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 32px;
+  margin-bottom: 32px;
+}
+.productPhoto {
+  width: 160px;
+  height: 210px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.productPhoto img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.detailCards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin: 20px 0;
+}
+.card {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  background: var(--surface);
+}
+.card span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.card strong {
+  display: block;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-top: 8px;
+}
+
+/* ─── Panels ──────────────────────────────────── */
+.panel { display: none; }
+.panel.active { display: block; }
+
+/* ─── Mini table ──────────────────────────────── */
+.miniTable {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.miniTable th, .miniTable td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  font-size: 14px;
+}
+.miniTable th {
+  background: var(--surface2);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.miniTable tr:last-child td { border-bottom: 0; }
+
+/* ─── Drawer ──────────────────────────────────── */
+.drawer {
+  position: fixed;
+  right: -480px;
+  top: 0;
+  width: 480px;
+  height: 100%;
+  padding: 28px 32px;
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  box-shadow: -4px 0 24px rgba(0,0,0,0.08);
+  z-index: 20;
+  transition: right 0.25s ease;
+}
+.drawer.open { right: 0; }
+.drawer h2 { margin: 20px 0 8px; font-size: 20px; font-weight: 700; }
+.field { margin-bottom: 18px; }
+
+/* ─── Modal ───────────────────────────────────── */
+.modal {
+  display: none;
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 780px;
+  max-width: 92vw;
+  border-radius: 12px;
+  padding: 32px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: 0 8px 40px rgba(0,0,0,0.16);
+  z-index: 20;
+}
+.modal.open { display: block; }
+.modal h2 { margin-top: 0; font-size: 20px; font-weight: 700; }
+
+.overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.32);
+  z-index: 15;
+}
+.overlay.open { display: block; }
+
+/* ─── Status pills ────────────────────────────── */
+.status {
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 999px;
+  padding: 5px 12px;
+  width: max-content;
+}
+.activeStatus { background: var(--green); color: var(--greenText); }
+.hiddenStatus { background: var(--red);   color: var(--redText); }
+
+/* ─── Unit type badges ────────────────────────── */
+.unitTypeBadge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 4px;
+  padding: 3px 8px;
+}
+.b2c  { background: var(--blue-soft);   color: var(--blue-soft-text); }
+.b2b  { background: var(--amber-soft);  color: var(--amber-soft-text); }
+.byod { background: var(--purple-soft); color: var(--purple-soft-text); }
+
+.unitRow td:last-child { white-space: nowrap; }
+
+.unitEditBtn {
+  height: 32px;
+  font-size: 12px;
+  padding: 0 12px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+.unitEditBtn:hover { background: var(--line); }
+
+.detailActions { display: flex; gap: 10px; margin-top: 24px; }
+
+@media (max-width: 1200px) {
+  .row { grid-template-columns: 1.6fr .6fr .9fr .5fr .5fr .5fr .6fr; }
+  .hideSmall { display: none; }
+  .filters { grid-template-columns: 1fr 1fr; }
+}
 </style>
 </head>
 
 <body>
 <div class="app">
-  <aside class="sidebar">
-    <div class="navIcon">▣</div><div class="navIcon active">⌂</div><div class="navIcon">♙</div><div class="navIcon">🛒</div><div class="navIcon">▦</div>
+
+  <aside class="sidebar" id="sidebar">
+    <!-- Toggle -->
+    <div class="navToggle" id="sidebarToggle" onclick="toggleSidebar()" title="Expandir menu">
+      <svg id="iconExpand" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect width="18" height="18" x="3" y="3" rx="2"/>
+        <path d="M9 3v18"/>
+        <path d="m14 9 3 3-3 3"/>
+      </svg>
+      <svg id="iconCollapse" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+        <rect width="18" height="18" x="3" y="3" rx="2"/>
+        <path d="M9 3v18"/>
+        <path d="m16 15-3-3 3-3"/>
+      </svg>
+    </div>
+    <!-- Recebimento -->
+    <div class="navItem">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/>
+        <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>
+      </svg>
+      <span class="navLabel">Recebimento</span>
+    </div>
+    <!-- Home -->
+    <div class="navItem">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/>
+        <path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+      </svg>
+      <span class="navLabel">Visão geral</span>
+    </div>
+    <!-- Clientes -->
+    <div class="navItem">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+        <circle cx="9" cy="7" r="4"/>
+        <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+      </svg>
+      <span class="navLabel">Clientes</span>
+    </div>
+    <!-- Aparelhos -->
+    <div class="navItem">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect width="14" height="20" x="5" y="2" rx="2" ry="2"/>
+        <path d="M12 18h.01"/>
+      </svg>
+      <span class="navLabel">Aparelhos</span>
+    </div>
+    <!-- Estoque (active) -->
+    <div class="navItem active">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="m7.5 4.27 9 5.15M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/>
+        <path d="m3.3 7 8.7 5 8.7-5"/>
+        <path d="M12 22V12"/>
+      </svg>
+      <span class="navLabel">Estoque</span>
+    </div>
+    <!-- Garantia -->
+    <div class="navItem">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>
+        <path d="m9 12 2 2 4-4"/>
+      </svg>
+      <span class="navLabel">Garantia</span>
+    </div>
   </aside>
 
   <main class="main">
     <section id="listPage">
-      <div class="breadcrumb">⌂ › Estoque</div>
+      <div class="breadcrumb">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+        <span>Estoque</span>
+      </div>
       <h1>Estoque</h1>
 
       <div class="locationBanner">
-        <div><strong>Localização principal</strong><br><span>Pitzi/Estoque - Leapfone - Osasco</span></div>
-        <span>Quebrados ficam acessíveis em “Todos”, mas não entram como disponíveis.</span>
+        <div>
+          <strong>Localização principal</strong><br>
+          <span class="sub">Pitzi/Estoque - Leapfone - Osasco</span>
+        </div>
+        <span class="helper">Quebrados ficam acessíveis em "Todos", mas não entram como disponíveis.</span>
       </div>
 
       <div class="tabs">
@@ -80,10 +651,41 @@ button.secondary{background:white;color:#111;border-color:#bfc3c7}
       </div>
 
       <section class="kpis">
-        <div class="kpi"><span>Estoque</span><strong id="kStock">0</strong></div>
-        <div class="kpi"><span>Fila</span><strong id="kQueue">0</strong></div>
-        <div class="kpi"><span>Saldo</span><strong id="kBalance">0</strong></div>
-        <div class="kpi"><span>Aging mais antigo</span><strong id="kAging">0d</strong></div>
+        <div class="kpi">
+          <div class="kpiIcon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m7.5 4.27 9 5.15M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/>
+              <path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>
+            </svg>
+          </div>
+          <div class="kpiBody"><span>Estoque</span><strong id="kStock">0</strong></div>
+        </div>
+        <div class="kpi">
+          <div class="kpiIcon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/>
+              <line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/>
+            </svg>
+          </div>
+          <div class="kpiBody"><span>Fila</span><strong id="kQueue">0</strong></div>
+        </div>
+        <div class="kpi">
+          <div class="kpiIcon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/>
+              <polyline points="16 7 22 7 22 13"/>
+            </svg>
+          </div>
+          <div class="kpiBody"><span>Saldo</span><strong id="kBalance">0</strong></div>
+        </div>
+        <div class="kpi">
+          <div class="kpiIcon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+            </svg>
+          </div>
+          <div class="kpiBody"><span>Aging mais antigo</span><strong id="kAging">0d</strong></div>
+        </div>
       </section>
 
       <section class="filters">
@@ -92,14 +694,15 @@ button.secondary{background:white;color:#111;border-color:#bfc3c7}
         <div><label>Capacidade</label><select id="capacity" onchange="render()"><option value="">Todas</option><option>128GB</option><option>256GB</option><option>512GB</option></select></div>
         <div><label>Cor</label><select id="color" onchange="render()"><option value="">Todas</option><option>Preto</option><option>Branco</option><option>Azul</option><option>Verde</option><option>Grafite</option></select></div>
         <div><label>Ordenar</label><select id="sort" onchange="render()"><option value="negative">Saldo crítico</option><option value="queue">Maior fila</option><option value="aging">Maior aging</option><option value="stock">Maior estoque</option></select></div>
-        <button onclick="openImportModal()">Importar preços</button>
+        <div><label>Unidade</label><select id="unit" onchange="render()"><option value="">Todas</option><option>Leapfone</option><option>Empresa Alpha</option><option>Empresa Beta</option><option>BYOD</option></select></div>
       </section>
 
-      <p class="helper">Cada linha representa um SKU: modelo + capacidade + condição. A edição de preço pode ser feita por SKU ou em lote.</p>
+      <p class="helper" style="margin-bottom:12px">Cada linha representa um SKU: modelo + capacidade + condição. Clique para ver detalhes e preços por unidade.</p>
 
       <section class="table">
         <div class="row header">
-          <div>Produto / SKU</div><div>Condição</div><div>Cores</div><div>Estoque</div><div>Fila</div><div>Saldo</div><div>Aging</div><div>Preço</div><div>Ações</div>
+          <div>Produto / SKU</div><div>Condição</div><div>Cores</div>
+          <div>Estoque</div><div>Fila</div><div>Saldo</div><div>Aging</div>
         </div>
         <div id="inventory"></div>
       </section>
@@ -112,197 +715,291 @@ button.secondary{background:white;color:#111;border-color:#bfc3c7}
 <div id="overlay" class="overlay"></div>
 
 <aside id="priceDrawer" class="drawer">
-  <button class="secondary" onclick="closePriceDrawer()">Fechar</button>
+  <button class="secondary" onclick="closePriceDrawer()">← Fechar</button>
   <h2>Editar preço</h2>
   <p class="helper" id="drawerSku"></p>
-
-  <div class="field"><label>Preço atual</label><input id="currentPrice" disabled></div>
-  <div class="field"><label>Novo preço mensal</label><input id="newPrice" type="number" placeholder="Ex: 249"></div>
-  <div class="field">
-    <label>Aplicar alteração para</label>
-    <select id="applyScope">
-      <option value="sku">Apenas este SKU</option>
-      <option value="modelCapacity">Mesmo modelo + capacidade</option>
-      <option value="model">Todo o modelo</option>
-    </select>
+  <p style="font-weight:600;font-size:14px;margin:0 0 20px" id="drawerUnit"></p>
+  <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border:1px solid var(--border);border-radius:8px;background:var(--surface2);margin-bottom:20px">
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted);flex-shrink:0">
+      <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+      <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+    </svg>
+    <div>
+      <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em">Preço de referência</div>
+      <div id="drawerRefPrice" style="font-size:15px;font-weight:700;color:var(--text);margin-top:1px"></div>
+    </div>
+    <span style="margin-left:auto;font-size:11px;color:var(--subtle)">Não editável</span>
   </div>
+  <div class="field"><label>Mensalidade atual</label><input id="currentPrice" disabled></div>
+  <div class="field"><label>Nova mensalidade</label><input id="newPrice" type="number" placeholder="Ex: 249"></div>
   <button onclick="savePrice()">Salvar preço</button>
 </aside>
 
-<section id="importModal" class="modal">
-  <h2>Importar planilha de preços</h2>
-  <p class="helper">Simulação: o sistema compara SKU, preço atual e novo preço antes de aplicar.</p>
-
-  <table class="miniTable">
-    <tr><th>SKU encontrado</th><th>Preço atual</th><th>Novo preço</th><th>Diferença</th><th>Status</th></tr>
-    <tr><td>iPhone 15 · 128GB · Usado</td><td>R$ 219</td><td>R$ 229</td><td>+ R$ 10</td><td>Encontrado</td></tr>
-    <tr><td>Galaxy S25 Ultra · 512GB · Usado</td><td>R$ 429</td><td>R$ 399</td><td>- R$ 30</td><td>Encontrado</td></tr>
-    <tr><td>Moto G99 · 256GB · Novo</td><td>—</td><td>R$ 89</td><td>—</td><td>Não encontrado</td></tr>
-  </table>
-
-  <br>
-  <button onclick="applyImport()">Aplicar encontrados</button>
-  <button class="secondary" onclick="closeImportModal()">Cancelar</button>
-</section>
 
 <script>
-let stockView="available";
-let selectedId=null;
+function toggleSidebar() {
+  const sb = document.getElementById("sidebar");
+  const exp = document.getElementById("iconExpand");
+  const col = document.getElementById("iconCollapse");
+  const expanded = sb.classList.toggle("expanded");
+  exp.style.display = expanded ? "none"  : "";
+  col.style.display = expanded ? ""      : "none";
+}
 
-const PRIMARY="Pitzi/Estoque - Leapfone - Osasco";
-const BROKEN="Pitzi/Estoque de quebrados - Leapfone - Osasco";
+let stockView = "available";
+let selectedId = null;
+let selectedUnitIdx = null;
 
-let products=[
-{id:"iphone-15-128-usado",name:"iPhone 15",model:"Apple iPhone 15 5G",memory:"6/128",capacity:"128GB",condition:"Usado",stockStatus:"available",location:PRIMARY,stock:17,queue:6,aging:16,monthly:219,price:7299,archived:false,colors:[{name:"Preto",qty:8,class:"black"},{name:"Azul",qty:4,class:"blue"},{name:"Verde",qty:3,class:"green"},{name:"Rosa",qty:2,class:"purple"}],history:["Preço alterado de R$ 209 para R$ 219"]},
-{id:"iphone-15-pro-max-256-usado",name:"iPhone 15 Pro Max",model:"Apple iPhone 15 Pro Max",memory:"8/256",capacity:"256GB",condition:"Usado",stockStatus:"available",location:PRIMARY,stock:6,queue:23,aging:23,monthly:349,price:11199,archived:false,colors:[{name:"Preto",qty:3,class:"black"},{name:"Azul",qty:1,class:"blue"},{name:"Titânio",qty:1,class:"gray"},{name:"Branco",qty:1,class:"white"}],history:["SKU criado"]},
-{id:"iphone-16-128-novo",name:"iPhone 16",model:"Apple iPhone 16",memory:"8/128",capacity:"128GB",condition:"Novo",stockStatus:"available",location:PRIMARY,stock:18,queue:11,aging:11,monthly:249,price:6749,archived:false,colors:[{name:"Verde",qty:8,class:"green"},{name:"Preto",qty:5,class:"black"},{name:"Branco",qty:3,class:"white"},{name:"Azul",qty:2,class:"blue"}],history:["Preço atualizado via planilha"]},
-{id:"galaxy-s24-256-usado",name:"Galaxy S24",model:"Samsung Galaxy S24 5G",memory:"8/256",capacity:"256GB",condition:"Usado",stockStatus:"available",location:PRIMARY,stock:11,queue:11,aging:11,monthly:209,price:5999,archived:false,colors:[{name:"Preto",qty:7,class:"black"},{name:"Cinza",qty:4,class:"gray"}],history:["SKU criado"]},
-{id:"galaxy-s25-ultra-512-usado",name:"Galaxy S25 Ultra",model:"Samsung Galaxy S25 Ultra 5G",memory:"12/512",capacity:"512GB",condition:"Usado",stockStatus:"available",location:PRIMARY,stock:2,queue:49,aging:49,monthly:429,price:12999,archived:false,colors:[{name:"Preto",qty:1,class:"black"},{name:"Prata",qty:1,class:"gray"}],history:["Preço alterado de R$ 449 para R$ 429"]},
-{id:"moto-g04s-128-usado",name:"Moto G04s",model:"Motorola Moto G04s",memory:"4/128",capacity:"128GB",condition:"Usado",stockStatus:"available",location:PRIMARY,stock:32,queue:15,aging:15,monthly:59,price:879,archived:false,colors:[{name:"Grafite",qty:26,class:"gray"},{name:"Coral",qty:6,class:"orange"}],history:["SKU criado"]},
-{id:"moto-g06-128-novo",name:"Moto G06",model:"Motorola Moto G06 4G",memory:"4/128",capacity:"128GB",condition:"Novo",stockStatus:"available",location:PRIMARY,stock:1,queue:148,aging:148,monthly:49,price:799,archived:false,colors:[{name:"Azul-marinho",qty:1,class:"blue"}],history:["SKU criado"]},
-{id:"iphone-13-128-quebrado",name:"iPhone 13",model:"Apple iPhone 13 5G",memory:"4/128",capacity:"128GB",condition:"Usado",stockStatus:"broken",location:BROKEN,stock:4,queue:0,aging:92,monthly:189,price:7599,archived:false,colors:[{name:"Preto",qty:2,class:"black"},{name:"Branco",qty:1,class:"white"}],history:["Movido para quebrados"]}
+const PRIMARY = "Pitzi/Estoque - Leapfone - Osasco";
+const BROKEN  = "Pitzi/Estoque de quebrados - Leapfone - Osasco";
+
+let products = [
+  {id:"iphone-15-128-usado", name:"iPhone 15", model:"Apple iPhone 15 5G", memory:"6/128", capacity:"128GB", condition:"Usado", stockStatus:"available", location:PRIMARY, stock:17, queue:6, aging:16, price:7299, referencePrice:7299, archived:false, img:"https://fdn2.gsmarena.com/vv/bigpic/apple-iphone-15.jpg",
+   colors:[{name:"Preto",qty:8,class:"black"},{name:"Azul",qty:4,class:"blue"},{name:"Verde",qty:3,class:"green"},{name:"Rosa",qty:2,class:"purple"}],
+   units:[{name:"Leapfone",type:"B2C",monthly:219},{name:"Empresa Alpha",type:"B2B",monthly:199},{name:"BYOD",type:"BYOD",monthly:149}],
+   history:["Preço Leapfone alterado de R$ 209 para R$ 219"]},
+
+  {id:"iphone-15-pro-max-256-usado", name:"iPhone 15 Pro Max", model:"Apple iPhone 15 Pro Max", memory:"8/256", capacity:"256GB", condition:"Usado", stockStatus:"available", location:PRIMARY, stock:6, queue:23, aging:23, price:11199, referencePrice:11199, archived:false, img:"https://fdn2.gsmarena.com/vv/bigpic/apple-iphone-15-pro-max.jpg",
+   colors:[{name:"Preto",qty:3,class:"black"},{name:"Azul",qty:1,class:"blue"},{name:"Titânio",qty:1,class:"gray"},{name:"Branco",qty:1,class:"white"}],
+   units:[{name:"Leapfone",type:"B2C",monthly:349},{name:"Empresa Beta",type:"B2B",monthly:319}],
+   history:["SKU criado"]},
+
+  {id:"iphone-16-128-novo", name:"iPhone 16", model:"Apple iPhone 16", memory:"8/128", capacity:"128GB", condition:"Novo", stockStatus:"available", location:PRIMARY, stock:18, queue:11, aging:11, price:6749, referencePrice:6749, archived:false, img:"https://fdn2.gsmarena.com/vv/bigpic/apple-iphone-16.jpg",
+   colors:[{name:"Verde",qty:8,class:"green"},{name:"Preto",qty:5,class:"black"},{name:"Branco",qty:3,class:"white"},{name:"Azul",qty:2,class:"blue"}],
+   units:[{name:"Leapfone",type:"B2C",monthly:249},{name:"Empresa Alpha",type:"B2B",monthly:229},{name:"Empresa Beta",type:"B2B",monthly:229},{name:"BYOD",type:"BYOD",monthly:179}],
+   history:["Preço atualizado via planilha"]},
+
+  {id:"galaxy-s24-256-usado", name:"Galaxy S24", model:"Samsung Galaxy S24 5G", memory:"8/256", capacity:"256GB", condition:"Usado", stockStatus:"available", location:PRIMARY, stock:11, queue:11, aging:11, price:5999, referencePrice:5999, archived:false, img:"https://fdn2.gsmarena.com/vv/bigpic/samsung-galaxy-s24.jpg",
+   colors:[{name:"Preto",qty:7,class:"black"},{name:"Cinza",qty:4,class:"gray"}],
+   units:[{name:"Leapfone",type:"B2C",monthly:209},{name:"Empresa Alpha",type:"B2B",monthly:189}],
+   history:["SKU criado"]},
+
+  {id:"galaxy-s25-ultra-512-usado", name:"Galaxy S25 Ultra", model:"Samsung Galaxy S25 Ultra 5G", memory:"12/512", capacity:"512GB", condition:"Usado", stockStatus:"available", location:PRIMARY, stock:2, queue:49, aging:49, price:12999, referencePrice:12999, archived:false, img:"https://fdn2.gsmarena.com/vv/bigpic/samsung-galaxy-s25-ultra.jpg",
+   colors:[{name:"Preto",qty:1,class:"black"},{name:"Prata",qty:1,class:"gray"}],
+   units:[{name:"Leapfone",type:"B2C",monthly:429},{name:"Empresa Beta",type:"B2B",monthly:399}],
+   history:["Preço alterado de R$ 449 para R$ 429"]},
+
+  {id:"moto-g04s-128-usado", name:"Moto G04s", model:"Motorola Moto G04s", memory:"4/128", capacity:"128GB", condition:"Usado", stockStatus:"available", location:PRIMARY, stock:32, queue:15, aging:15, price:879, referencePrice:879, archived:false, img:"https://fdn2.gsmarena.com/vv/bigpic/motorola-moto-g04s.jpg",
+   colors:[{name:"Grafite",qty:26,class:"gray"},{name:"Coral",qty:6,class:"orange"}],
+   units:[{name:"Leapfone",type:"B2C",monthly:59}],
+   history:["SKU criado"]},
+
+  {id:"moto-g06-128-novo", name:"Moto G06", model:"Motorola Moto G06 4G", memory:"4/128", capacity:"128GB", condition:"Novo", stockStatus:"available", location:PRIMARY, stock:1, queue:148, aging:148, price:799, referencePrice:799, archived:false, img:"https://fdn2.gsmarena.com/vv/bigpic/motorola-moto-g06.jpg",
+   colors:[{name:"Azul-marinho",qty:1,class:"blue"}],
+   units:[{name:"Leapfone",type:"B2C",monthly:49},{name:"BYOD",type:"BYOD",monthly:39}],
+   history:["SKU criado"]},
+
+  {id:"iphone-13-128-quebrado", name:"iPhone 13", model:"Apple iPhone 13 5G", memory:"4/128", capacity:"128GB", condition:"Usado", stockStatus:"broken", location:BROKEN, stock:4, queue:0, aging:92, price:7599, referencePrice:7599, archived:false, img:"https://fdn2.gsmarena.com/vv/bigpic/apple-iphone-13.jpg",
+   colors:[{name:"Preto",qty:2,class:"black"},{name:"Branco",qty:1,class:"white"}],
+   units:[{name:"Leapfone",type:"B2C",monthly:189}],
+   history:["Movido para quebrados"]}
 ];
 
-function balance(p){return p.stock-p.queue}
-function badge(v){return `<span class="badge ${v<0?'neg':v<=3?'warn':'pos'}">${v}</span>`}
-function dots(colors){return `<div class="colors">${colors.map(c=>`<div class="colorDot ${c.class}" title="${c.name}: ${c.qty}">${c.qty}</div>`).join("")}</div>`}
-function statusSite(p){
- if(p.archived)return `<span class="status hiddenStatus">Arquivado</span>`;
- if(p.stockStatus==="broken")return `<span class="status hiddenStatus">Indisponível · quebrados</span>`;
- return balance(p)<=0?`<span class="status hiddenStatus">Oculto automático</span>`:`<span class="status activeStatus">Ativo</span>`;
+function balance(p) { return p.stock - p.queue; }
+function badge(v) { return `<span class="badge ${v < 0 ? 'neg' : v <= 3 ? 'warn' : 'pos'}">${v}</span>`; }
+function dots(colors) {
+  return `<div class="colors">${colors.map(c =>
+    `<div class="colorDot ${c.class}" title="${c.name}: ${c.qty}">${c.qty}</div>`
+  ).join("")}</div>`;
+}
+function typeBadge(type) {
+  const cls = type === "B2C" ? "b2c" : type === "B2B" ? "b2b" : "byod";
+  return `<span class="unitTypeBadge ${cls}">${type}</span>`;
+}
+function statusSite(p) {
+  if (p.archived)              return `<span class="status hiddenStatus">Arquivado</span>`;
+  if (p.stockStatus === "broken") return `<span class="status hiddenStatus">Indisponível · quebrados</span>`;
+  return balance(p) <= 0
+    ? `<span class="status hiddenStatus">Oculto automático</span>`
+    : `<span class="status activeStatus">Ativo</span>`;
 }
 
-function setStockView(v,e){stockView=v;document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));e.target.classList.add("active");render()}
-
-function getList(){
- const q=document.getElementById("search").value.toLowerCase();
- const condition=document.getElementById("condition").value;
- const capacity=document.getElementById("capacity").value;
- const color=document.getElementById("color").value;
- const sort=document.getElementById("sort").value;
-
- let list=products.filter(p=>{
-  if(stockView==="available" && p.stockStatus!=="available")return false;
-  if(p.archived && stockView==="available")return false;
-  const search=[p.name,p.model,p.capacity,p.condition].join(" ").toLowerCase().includes(q)||p.colors.some(c=>c.name.toLowerCase().includes(q));
-  return search && (!condition||p.condition===condition) && (!capacity||p.capacity===capacity) && (!color||p.colors.some(c=>c.name===color));
- });
-
- if(sort==="negative")list.sort((a,b)=>balance(a)-balance(b));
- if(sort==="queue")list.sort((a,b)=>b.queue-a.queue);
- if(sort==="aging")list.sort((a,b)=>b.aging-a.aging);
- if(sort==="stock")list.sort((a,b)=>b.stock-a.stock);
- return list;
+function setStockView(v, e) {
+  stockView = v;
+  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+  e.target.classList.add("active");
+  render();
 }
 
-function render(){
- const list=getList();
- document.getElementById("kStock").innerText=list.reduce((a,p)=>a+p.stock,0);
- document.getElementById("kQueue").innerText=list.reduce((a,p)=>a+p.queue,0);
- document.getElementById("kBalance").innerText=list.reduce((a,p)=>a+balance(p),0);
- document.getElementById("kAging").innerText=list.length?Math.max(...list.map(p=>p.aging))+"d":"0d";
+function getList() {
+  const q         = document.getElementById("search").value.toLowerCase();
+  const condition = document.getElementById("condition").value;
+  const capacity  = document.getElementById("capacity").value;
+  const color     = document.getElementById("color").value;
+  const sort      = document.getElementById("sort").value;
+  const unit      = document.getElementById("unit").value;
 
- document.getElementById("inventory").innerHTML=list.map(p=>`
-  <div class="row" onclick="openDetail('${p.id}')">
-   <div class="phone"><div class="thumb"></div><div><div class="productName">${p.name}</div><div class="sub">${p.memory} · ${p.capacity}</div></div></div>
-   <div>${p.condition}</div><div>${dots(p.colors)}</div><div>${p.stock}</div><div>${p.queue}</div><div>${badge(balance(p))}</div><div>${p.aging}d</div>
-   <div><strong>R$ ${p.monthly}</strong></div>
-   <div class="actionGroup">
-    <button onclick="event.stopPropagation();openPriceDrawer('${p.id}')">Preço</button>
-    <button class="secondary" onclick="event.stopPropagation();archiveSku('${p.id}')">Arquivar</button>
-   </div>
-  </div>`).join("");
+  let list = products.filter(p => {
+    if (stockView === "available" && p.stockStatus !== "available") return false;
+    if (p.archived && stockView === "available") return false;
+    const search = [p.name, p.model, p.capacity, p.condition].join(" ").toLowerCase().includes(q)
+      || p.colors.some(c => c.name.toLowerCase().includes(q));
+    return search
+      && (!condition || p.condition === condition)
+      && (!capacity  || p.capacity  === capacity)
+      && (!color     || p.colors.some(c => c.name === color))
+      && (!unit      || p.units.some(u => u.name === unit));
+  });
+
+  if (sort === "negative") list.sort((a, b) => balance(a) - balance(b));
+  if (sort === "queue")    list.sort((a, b) => b.queue - a.queue);
+  if (sort === "aging")    list.sort((a, b) => b.aging - a.aging);
+  if (sort === "stock")    list.sort((a, b) => b.stock - a.stock);
+  return list;
 }
 
-function openPriceDrawer(id){
- selectedId=id;
- const p=products.find(x=>x.id===id);
- document.getElementById("drawerSku").innerText=`${p.name} · ${p.capacity} · ${p.condition}`;
- document.getElementById("currentPrice").value=`R$ ${p.monthly}`;
- document.getElementById("newPrice").value="";
- document.getElementById("priceDrawer").classList.add("open");
-}
-function closePriceDrawer(){document.getElementById("priceDrawer").classList.remove("open")}
-function savePrice(){
- const p=products.find(x=>x.id===selectedId);
- const newPrice=Number(document.getElementById("newPrice").value);
- const scope=document.getElementById("applyScope").value;
- if(!newPrice){alert("Informe o novo preço.");return}
- let affected=products.filter(x=>x.id===p.id);
- if(scope==="modelCapacity")affected=products.filter(x=>x.name===p.name&&x.capacity===p.capacity);
- if(scope==="model")affected=products.filter(x=>x.name===p.name);
- affected.forEach(x=>{x.history.unshift(`Preço alterado de R$ ${x.monthly} para R$ ${newPrice}`);x.monthly=newPrice});
- closePriceDrawer();render();alert(`${affected.length} SKU(s) atualizados.`);
+function render() {
+  const list = getList();
+  document.getElementById("kStock").innerText   = list.reduce((a, p) => a + p.stock, 0);
+  document.getElementById("kQueue").innerText   = list.reduce((a, p) => a + p.queue, 0);
+  document.getElementById("kBalance").innerText = list.reduce((a, p) => a + balance(p), 0);
+  document.getElementById("kAging").innerText   = list.length ? Math.max(...list.map(p => p.aging)) + "d" : "0d";
+
+  document.getElementById("inventory").innerHTML = list.map(p => `
+    <div class="row" onclick="openDetail('${p.id}')">
+      <div class="phone">
+        <div class="thumb"><img src="${p.img}" alt="${p.name}" onerror="this.style.display='none'"></div>
+        <div><div class="productName">${p.name}</div><div class="sub">${p.memory} · ${p.capacity}</div></div>
+      </div>
+      <div>${p.condition}</div>
+      <div>${dots(p.colors)}</div>
+      <div>${p.stock}</div>
+      <div>${p.queue}</div>
+      <div>${badge(balance(p))}</div>
+      <div>${p.aging}d</div>
+    </div>`).join("");
 }
 
-function archiveSku(id){
- const p=products.find(x=>x.id===id);
- if(confirm(`Arquivar ${p.name} ${p.capacity} ${p.condition}?`)){
-  p.archived=true;p.history.unshift("SKU arquivado manualmente");render();
- }
+function openPriceDrawer(id, unitIdx) {
+  selectedId = id;
+  selectedUnitIdx = unitIdx;
+  const p = products.find(x => x.id === id);
+  const u = p.units[unitIdx];
+  document.getElementById("drawerSku").innerText      = `${p.name} · ${p.capacity} · ${p.condition}`;
+  document.getElementById("drawerUnit").innerText     = `Unidade: ${u.name}`;
+  document.getElementById("drawerRefPrice").innerText = `R$ ${p.referencePrice.toLocaleString("pt-BR")}`;
+  document.getElementById("currentPrice").value       = `R$ ${u.monthly}`;
+  document.getElementById("newPrice").value           = "";
+  document.getElementById("priceDrawer").classList.add("open");
+}
+function closePriceDrawer() { document.getElementById("priceDrawer").classList.remove("open"); }
+function savePrice() {
+  const p = products.find(x => x.id === selectedId);
+  const u = p.units[selectedUnitIdx];
+  const newPrice = Number(document.getElementById("newPrice").value);
+  if (!newPrice) { alert("Informe o novo preço."); return; }
+  p.history.unshift(`Preço ${u.name} alterado de R$ ${u.monthly} para R$ ${newPrice}`);
+  u.monthly = newPrice;
+  closePriceDrawer();
+  openDetail(selectedId);
+  alert(`Preço atualizado para ${u.name}.`);
 }
 
-function openImportModal(){document.getElementById("overlay").classList.add("open");document.getElementById("importModal").classList.add("open")}
-function closeImportModal(){document.getElementById("overlay").classList.remove("open");document.getElementById("importModal").classList.remove("open")}
-function applyImport(){
- products.find(p=>p.id==="iphone-15-128-usado").monthly=229;
- products.find(p=>p.id==="galaxy-s25-ultra-512-usado").monthly=399;
- closeImportModal();render();alert("2 preços atualizados. 1 SKU não encontrado.");
+function archiveSku(id) {
+  const p = products.find(x => x.id === id);
+  if (confirm(`Arquivar ${p.name} ${p.capacity} ${p.condition}?`)) {
+    p.archived = true;
+    p.history.unshift("SKU arquivado manualmente");
+    backToList();
+  }
 }
 
-function openDetail(id){
- const p=products.find(x=>x.id===id);
- document.getElementById("listPage").style.display="none";
- const d=document.getElementById("detailPage");d.classList.add("active");
- d.innerHTML=`
-  <div class="back" onclick="backToList()">← Voltar para estoque</div>
-  <div class="breadcrumb">⌂ › Estoque › ${p.name}</div>
-  <section class="hero">
-   <div><div class="productPhoto"></div></div>
-   <div>
-    <h1>${p.name}</h1>
-    <div class="sub">${p.model} · ${p.memory} · ${p.condition}</div>
-    <p class="helper"><strong>Localização:</strong> ${p.location}</p>
-    <section class="detailCards">
-     <div class="card"><span>Estoque</span><strong>${p.stock}</strong></div>
-     <div class="card"><span>Fila</span><strong>${p.queue}</strong></div>
-     <div class="card"><span>Saldo</span><strong>${balance(p)}</strong></div>
-     <div class="card"><span>Preço</span><strong>R$ ${p.monthly}</strong></div>
+
+function openDetail(id) {
+  const p = products.find(x => x.id === id);
+  document.getElementById("listPage").style.display = "none";
+  const d = document.getElementById("detailPage");
+  d.classList.add("active");
+  d.innerHTML = `
+    <div class="back" onclick="backToList()">← Voltar para estoque</div>
+    <div class="breadcrumb">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+      <span class="link" onclick="backToList()">Estoque</span>
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+      <span>${p.name}</span>
+    </div>
+
+    <section class="hero">
+      <div><div class="productPhoto"><img src="${p.img}" alt="${p.name}" onerror="this.style.display='none'"></div></div>
+      <div>
+        <h1>${p.name}</h1>
+        <div class="sub">${p.model} · ${p.memory} · ${p.condition}</div>
+        <p class="helper" style="margin-top:6px"><strong>Localização:</strong> ${p.location}</p>
+        <section class="detailCards">
+          <div class="card"><span>Estoque</span><strong>${p.stock}</strong></div>
+          <div class="card"><span>Fila</span><strong>${p.queue}</strong></div>
+          <div class="card"><span>Saldo</span><strong>${balance(p)}</strong></div>
+          <div class="card"><span>Unidades ativas</span><strong>${p.units.length}</strong></div>
+        </section>
+        ${statusSite(p)}
+      </div>
     </section>
-    ${statusSite(p)}
-   </div>
-  </section>
 
-  <div class="detailTabs">
-   <div class="detailTab active" onclick="switchTab(event,'estoque')">Estoque</div>
-   <div class="detailTab" onclick="switchTab(event,'pricing')">Pricing</div>
-   <div class="detailTab" onclick="switchTab(event,'historico')">Histórico</div>
-  </div>
+    <div class="detailTabs">
+      <div class="detailTab active" onclick="switchTab(event,'estoque')">Estoque</div>
+      <div class="detailTab" onclick="switchTab(event,'pricing')">Pricing</div>
+      <div class="detailTab" onclick="switchTab(event,'historico')">Histórico</div>
+    </div>
 
-  <div id="estoque" class="panel active">
-   <table class="miniTable"><tr><th>Cor</th><th>Quantidade</th><th>Status estoque</th></tr>
-   ${p.colors.map(c=>`<tr><td>${c.name}</td><td>${c.qty}</td><td>${p.stockStatus==="broken"?"Quebrados":"Disponível"}</td></tr>`).join("")}
-   </table>
-  </div>
+    <div id="estoque" class="panel active">
+      <table class="miniTable">
+        <tr><th>Cor</th><th>Quantidade</th><th>Status estoque</th></tr>
+        ${p.colors.map(c => `<tr><td>${c.name}</td><td>${c.qty}</td><td>${p.stockStatus === "broken" ? "Quebrados" : "Disponível"}</td></tr>`).join("")}
+      </table>
+    </div>
 
-  <div id="pricing" class="panel">
-   <section class="detailCards">
-    <div class="card"><span>Preço aparelho</span><strong>R$ ${p.price.toLocaleString("pt-BR")}</strong></div>
-    <div class="card"><span>Mensalidade</span><strong>R$ ${p.monthly}</strong></div>
-    <div class="card"><span>Status site</span><strong>${p.archived?"Arquivado":balance(p)<=0?"Oculto":"Ativo"}</strong></div>
-    <div class="card"><span>Escopo sugerido</span><strong>SKU</strong></div>
-   </section>
-   <button onclick="openPriceDrawer('${p.id}')">Editar preço</button>
-   <button class="secondary" onclick="archiveSku('${p.id}')">Arquivar SKU</button>
-  </div>
+    <div id="pricing" class="panel">
+      <div style="display:flex;align-items:center;gap:16px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;background:var(--surface2);margin-bottom:20px">
+        <div style="width:36px;height:36px;border-radius:8px;background:var(--line);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--muted)">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px">Preço de referência</div>
+          <div style="font-size:20px;font-weight:700;letter-spacing:-0.02em;color:var(--text)">R$ ${p.referencePrice.toLocaleString("pt-BR")}</div>
+        </div>
+        <span style="font-size:12px;font-weight:500;color:var(--subtle);white-space:nowrap">Definido no cadastro · não editável</span>
+      </div>
+      <p class="helper" style="margin-bottom:16px">Mensalidade por unidade (contrato). Cada unidade pode ter um valor diferente.</p>
+      <table class="miniTable">
+        <tr><th>Unidade</th><th>Contrato</th><th>Mensalidade</th><th></th></tr>
+        ${p.units.map((u, i) => `
+        <tr class="unitRow">
+          <td><strong>${u.name}</strong></td>
+          <td>${typeBadge(u.type)}</td>
+          <td><strong>R$ ${u.monthly}</strong></td>
+          <td><button class="unitEditBtn" onclick="openPriceDrawer('${p.id}',${i})">Editar preço</button></td>
+        </tr>`).join("")}
+      </table>
+      <div class="detailActions">
+        <button class="secondary" onclick="archiveSku('${p.id}')">Arquivar SKU</button>
+      </div>
+    </div>
 
-  <div id="historico" class="panel">
-   <table class="miniTable"><tr><th>Evento</th></tr>${p.history.map(h=>`<tr><td>${h}</td></tr>`).join("")}</table>
-  </div>`;
+    <div id="historico" class="panel">
+      <table class="miniTable">
+        <tr><th>Evento</th></tr>
+        ${p.history.map(h => `<tr><td>${h}</td></tr>`).join("")}
+      </table>
+    </div>`;
 }
 
-function backToList(){document.getElementById("detailPage").classList.remove("active");document.getElementById("detailPage").innerHTML="";document.getElementById("listPage").style.display="block";render()}
-function switchTab(e,id){document.querySelectorAll(".detailTab").forEach(t=>t.classList.remove("active"));document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));e.target.classList.add("active");document.getElementById(id).classList.add("active")}
+function backToList() {
+  document.getElementById("detailPage").classList.remove("active");
+  document.getElementById("detailPage").innerHTML = "";
+  document.getElementById("listPage").style.display = "block";
+  render();
+}
+function switchTab(e, id) {
+  document.querySelectorAll(".detailTab").forEach(t => t.classList.remove("active"));
+  document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+  e.target.classList.add("active");
+  document.getElementById(id).classList.add("active");
+}
+
 render();
 </script>
 </body>
