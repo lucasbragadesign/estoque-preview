@@ -372,7 +372,7 @@ button.secondary:hover { background: var(--line); }
 }
 .pos { background: var(--green);  color: var(--greenText); }
 .warn{ background: var(--yellow); color: var(--yellowText); }
-.neg { background: var(--red);    color: var(--redText); }
+.neg { background: var(--neutral); color: var(--neutralText); }
 
 /* ─── Detail page ─────────────────────────────── */
 .detail { display: none; }
@@ -523,7 +523,7 @@ button.secondary:hover { background: var(--line); }
   width: max-content;
 }
 .activeStatus { background: var(--green); color: var(--greenText); }
-.hiddenStatus { background: var(--red);   color: var(--redText); }
+.hiddenStatus { background: var(--neutral); color: var(--neutralText); }
 
 /* ─── Unit type badges ────────────────────────── */
 .unitTypeBadge {
@@ -557,6 +557,28 @@ tr.unitArchived td { opacity:0.4; }
 tr.unitArchived td:last-child { opacity:1; }
 
 .detailActions { display: flex; gap: 10px; margin-top: 24px; }
+
+/* ─── Pricing section label ───────────────────── */
+.sectionLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0 0 10px;
+}
+
+/* ─── Plan chip in drawer ─────────────────────── */
+.planChip {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 6px;
+  padding: 4px 12px;
+  background: var(--neutral);
+  color: var(--neutralText);
+  margin-bottom: 20px;
+}
 
 @media (max-width: 1200px) {
   .row { grid-template-columns: 1.6fr .6fr .9fr .5fr .5fr .5fr .6fr; }
@@ -726,7 +748,7 @@ tr.unitArchived td:last-child { opacity:1; }
   <button class="secondary" onclick="closePriceDrawer()" style="margin-bottom:8px">← Fechar</button>
   <h2>Editar preço</h2>
   <p class="helper" id="drawerSku"></p>
-  <p style="font-weight:600;font-size:14px;margin:0 0 20px" id="drawerUnit"></p>
+  <p style="font-weight:600;font-size:14px;margin:0 0 4px" id="drawerUnit"></p>
   <div id="drawerBody"></div>
   <button onclick="savePrice()" style="width:100%;margin-top:16px">Salvar</button>
 </aside>
@@ -745,113 +767,164 @@ function toggleSidebar() {
 let stockView = "available";
 let selectedId = null;
 let selectedUnitIdx = null;
+let selectedPlanIdx = null;
 
 const PRIMARY = "Pitzi/Estoque - Leapfone - Osasco";
 const BROKEN  = "Pitzi/Estoque de quebrados - Leapfone - Osasco";
 
 let products = [
-  {id:"iphone-15-128-usado", name:"iPhone 15", model:"Apple iPhone 15 5G", memory:"6/128", capacity:"128GB", condition:"Usado", stockStatus:"available", location:PRIMARY, stock:17, queue:6, aging:16, price:7299, referencePrice:7299, residualPrice:2500, archived:false, img:"https://fdn2.gsmarena.com/vv/bigpic/apple-iphone-15.jpg",
+  {id:"iphone-15-128-usado", name:"iPhone 15", model:"Apple iPhone 15 5G", memory:"6/128", capacity:"128GB", condition:"Usado", stockStatus:"available", location:PRIMARY, stock:17, queue:6, aging:16, price:7299, archived:false, img:"https://fdn2.gsmarena.com/vv/bigpic/apple-iphone-15.jpg",
    colors:[{name:"Preto",qty:8,class:"black"},{name:"Azul",qty:4,class:"blue"},{name:"Verde",qty:3,class:"green"},{name:"Rosa",qty:2,class:"purple"}],
    units:[
-     {name:"Leapfone",     type:"B2C",  archived:false, plans:{mensal:219,anual:199,bbMensal:179,bb21:169}},
-     {name:"Empresa Alpha",type:"B2B",  archived:false, plans:{mensal:199}},
-     {name:"BYOD",         type:"BYOD", archived:false, plans:{mensal:149}}
+     {name:"Leapfone",      type:"B2C",  archived:false, plans:[
+       {name:"Mensal", valor:219,  referencia:7299, residual:2500},
+       {name:"Anual",  valor:199,  referencia:7299, residual:2200},
+       {name:"BB",     valor:179,  referencia:7299, residual:1900}
+     ]},
+     {name:"Empresa Alpha", type:"B2B",  archived:false, plans:[
+       {name:"Mensal", valor:199,  referencia:7299, residual:2500}
+     ]},
+     {name:"BYOD",          type:"BYOD", archived:false, plans:[
+       {name:"Mensal", valor:149,  referencia:7299, residual:2500}
+     ]}
    ],
    priceHistory:[
-     {unit:"Leapfone",    type:"B2C",  refPrice:7299, plans:{mensal:189,anual:169,bbMensal:149,bb21:139}, date:"Fev 2024", current:false},
-     {unit:"Leapfone",    type:"B2C",  refPrice:7299, plans:{mensal:209,anual:189,bbMensal:165,bb21:155}, date:"Jun 2024", current:false},
-     {unit:"Leapfone",    type:"B2C",  refPrice:7299, plans:{mensal:219,anual:199,bbMensal:179,bb21:169}, date:"Jan 2025", current:true},
-     {unit:"Empresa Alpha",type:"B2B", refPrice:7299, plans:{mensal:179}, date:"Fev 2024", current:false},
-     {unit:"Empresa Alpha",type:"B2B", refPrice:7299, plans:{mensal:199}, date:"Jun 2024", current:true},
-     {unit:"BYOD",        type:"BYOD", refPrice:7299, plans:{mensal:149}, date:"Mar 2024", current:true},
+     {unit:"Leapfone",     type:"B2C",  planName:"Mensal", valor:189, referencia:7299, residual:2500, date:"Fev 2024", current:false},
+     {unit:"Leapfone",     type:"B2C",  planName:"Mensal", valor:209, referencia:7299, residual:2500, date:"Jun 2024", current:false},
+     {unit:"Leapfone",     type:"B2C",  planName:"Mensal", valor:219, referencia:7299, residual:2500, date:"Jan 2025", current:true},
+     {unit:"Empresa Alpha",type:"B2B",  planName:"Mensal", valor:179, referencia:7299, residual:2500, date:"Fev 2024", current:false},
+     {unit:"Empresa Alpha",type:"B2B",  planName:"Mensal", valor:199, referencia:7299, residual:2500, date:"Jun 2024", current:true},
+     {unit:"BYOD",         type:"BYOD", planName:"Mensal", valor:149, referencia:7299, residual:2500, date:"Mar 2024", current:true}
    ],
    history:["Jan 2025 — Preço Leapfone atualizado","Jun 2024 — Preço Leapfone e Empresa Alpha atualizados","Fev 2024 — SKU criado"]},
 
-  {id:"iphone-15-pro-max-256-usado", name:"iPhone 15 Pro Max", model:"Apple iPhone 15 Pro Max", memory:"8/256", capacity:"256GB", condition:"Usado", stockStatus:"available", location:PRIMARY, stock:6, queue:23, aging:23, price:11199, referencePrice:11199, residualPrice:3800, archived:false, img:"https://fdn2.gsmarena.com/vv/bigpic/apple-iphone-15-pro-max.jpg",
+  {id:"iphone-15-pro-max-256-usado", name:"iPhone 15 Pro Max", model:"Apple iPhone 15 Pro Max", memory:"8/256", capacity:"256GB", condition:"Usado", stockStatus:"available", location:PRIMARY, stock:6, queue:23, aging:23, price:11199, archived:false, img:"https://fdn2.gsmarena.com/vv/bigpic/apple-iphone-15-pro-max.jpg",
    colors:[{name:"Preto",qty:3,class:"black"},{name:"Azul",qty:1,class:"blue"},{name:"Titânio",qty:1,class:"gray"},{name:"Branco",qty:1,class:"white"}],
    units:[
-     {name:"Leapfone",   type:"B2C", archived:false, plans:{mensal:349,anual:319,bbMensal:279,bb21:259}},
-     {name:"Empresa Beta",type:"B2B",archived:false, plans:{mensal:319}}
+     {name:"Leapfone",    type:"B2C", archived:false, plans:[
+       {name:"Mensal", valor:349, referencia:11199, residual:3800},
+       {name:"Anual",  valor:319, referencia:11199, residual:3400},
+       {name:"BB",     valor:279, referencia:11199, residual:3000}
+     ]},
+     {name:"Empresa Beta",type:"B2B",archived:false, plans:[
+       {name:"Mensal", valor:319, referencia:11199, residual:3800}
+     ]}
    ],
    priceHistory:[
-     {unit:"Leapfone",    type:"B2C", refPrice:11199, plans:{mensal:349,anual:319,bbMensal:279,bb21:259}, date:"Abr 2024", current:true},
-     {unit:"Empresa Beta",type:"B2B", refPrice:11199, plans:{mensal:319}, date:"Abr 2024", current:true},
+     {unit:"Leapfone",    type:"B2C", planName:"Mensal", valor:349, referencia:11199, residual:3800, date:"Abr 2024", current:true},
+     {unit:"Empresa Beta",type:"B2B", planName:"Mensal", valor:319, referencia:11199, residual:3800, date:"Abr 2024", current:true}
    ],
    history:["Abr 2024 — SKU criado"]},
 
-  {id:"iphone-16-128-novo", name:"iPhone 16", model:"Apple iPhone 16", memory:"8/128", capacity:"128GB", condition:"Novo", stockStatus:"available", location:PRIMARY, stock:18, queue:11, aging:11, price:6749, referencePrice:6749, residualPrice:2200, archived:false, img:"https://fdn2.gsmarena.com/vv/bigpic/apple-iphone-16.jpg",
+  {id:"iphone-16-128-novo", name:"iPhone 16", model:"Apple iPhone 16", memory:"8/128", capacity:"128GB", condition:"Novo", stockStatus:"available", location:PRIMARY, stock:18, queue:11, aging:11, price:6749, archived:false, img:"https://fdn2.gsmarena.com/vv/bigpic/apple-iphone-16.jpg",
    colors:[{name:"Verde",qty:8,class:"green"},{name:"Preto",qty:5,class:"black"},{name:"Branco",qty:3,class:"white"},{name:"Azul",qty:2,class:"blue"}],
    units:[
-     {name:"Leapfone",    type:"B2C",  archived:false, plans:{mensal:249,anual:229,bbMensal:199,bb21:189}},
-     {name:"Empresa Alpha",type:"B2B", archived:false, plans:{mensal:229}},
-     {name:"Empresa Beta", type:"B2B", archived:false, plans:{mensal:229}},
-     {name:"BYOD",         type:"BYOD",archived:false, plans:{mensal:179}}
+     {name:"Leapfone",     type:"B2C",  archived:false, plans:[
+       {name:"Mensal", valor:249, referencia:6749, residual:2200},
+       {name:"Anual",  valor:229, referencia:6749, residual:1900},
+       {name:"BB",     valor:199, referencia:6749, residual:1700}
+     ]},
+     {name:"Empresa Alpha",type:"B2B",  archived:false, plans:[
+       {name:"Mensal", valor:229, referencia:6749, residual:2200}
+     ]},
+     {name:"Empresa Beta", type:"B2B",  archived:false, plans:[
+       {name:"Mensal", valor:229, referencia:6749, residual:2200}
+     ]},
+     {name:"BYOD",         type:"BYOD", archived:false, plans:[
+       {name:"Mensal", valor:179, referencia:6749, residual:2200}
+     ]}
    ],
    priceHistory:[
-     {unit:"Leapfone",    type:"B2C",  refPrice:6749, plans:{mensal:269,anual:249,bbMensal:219,bb21:209}, date:"Set 2024", current:false},
-     {unit:"Leapfone",    type:"B2C",  refPrice:6749, plans:{mensal:249,anual:229,bbMensal:199,bb21:189}, date:"Dez 2024", current:true},
-     {unit:"Empresa Alpha",type:"B2B", refPrice:6749, plans:{mensal:229}, date:"Set 2024", current:true},
-     {unit:"Empresa Beta", type:"B2B", refPrice:6749, plans:{mensal:229}, date:"Set 2024", current:true},
-     {unit:"BYOD",        type:"BYOD", refPrice:6749, plans:{mensal:179}, date:"Set 2024", current:true},
+     {unit:"Leapfone",     type:"B2C",  planName:"Mensal", valor:269, referencia:6749, residual:2200, date:"Set 2024", current:false},
+     {unit:"Leapfone",     type:"B2C",  planName:"Mensal", valor:249, referencia:6749, residual:2200, date:"Dez 2024", current:true},
+     {unit:"Empresa Alpha",type:"B2B",  planName:"Mensal", valor:229, referencia:6749, residual:2200, date:"Set 2024", current:true},
+     {unit:"Empresa Beta", type:"B2B",  planName:"Mensal", valor:229, referencia:6749, residual:2200, date:"Set 2024", current:true},
+     {unit:"BYOD",         type:"BYOD", planName:"Mensal", valor:179, referencia:6749, residual:2200, date:"Set 2024", current:true}
    ],
    history:["Dez 2024 — Preço Leapfone atualizado","Set 2024 — SKU criado"]},
 
-  {id:"galaxy-s24-256-usado", name:"Galaxy S24", model:"Samsung Galaxy S24 5G", memory:"8/256", capacity:"256GB", condition:"Usado", stockStatus:"available", location:PRIMARY, stock:11, queue:11, aging:11, price:5999, referencePrice:5999, residualPrice:2000, archived:false, img:"https://fdn2.gsmarena.com/vv/bigpic/samsung-galaxy-s24.jpg",
+  {id:"galaxy-s24-256-usado", name:"Galaxy S24", model:"Samsung Galaxy S24 5G", memory:"8/256", capacity:"256GB", condition:"Usado", stockStatus:"available", location:PRIMARY, stock:11, queue:11, aging:11, price:5999, archived:false, img:"https://fdn2.gsmarena.com/vv/bigpic/samsung-galaxy-s24.jpg",
    colors:[{name:"Preto",qty:7,class:"black"},{name:"Cinza",qty:4,class:"gray"}],
    units:[
-     {name:"Leapfone",    type:"B2C", archived:false, plans:{mensal:209,anual:189,bbMensal:169,bb21:159}},
-     {name:"Empresa Alpha",type:"B2B",archived:false, plans:{mensal:189}}
+     {name:"Leapfone",     type:"B2C", archived:false, plans:[
+       {name:"Mensal", valor:209, referencia:5999, residual:2000},
+       {name:"Anual",  valor:189, referencia:5999, residual:1700},
+       {name:"BB",     valor:169, referencia:5999, residual:1500}
+     ]},
+     {name:"Empresa Alpha",type:"B2B",archived:false, plans:[
+       {name:"Mensal", valor:189, referencia:5999, residual:2000}
+     ]}
    ],
    priceHistory:[
-     {unit:"Leapfone",    type:"B2C", refPrice:5999, plans:{mensal:209,anual:189,bbMensal:169,bb21:159}, date:"Mar 2024", current:true},
-     {unit:"Empresa Alpha",type:"B2B",refPrice:5999, plans:{mensal:189}, date:"Mar 2024", current:true},
+     {unit:"Leapfone",     type:"B2C", planName:"Mensal", valor:209, referencia:5999, residual:2000, date:"Mar 2024", current:true},
+     {unit:"Empresa Alpha",type:"B2B", planName:"Mensal", valor:189, referencia:5999, residual:2000, date:"Mar 2024", current:true}
    ],
    history:["Mar 2024 — SKU criado"]},
 
-  {id:"galaxy-s25-ultra-512-usado", name:"Galaxy S25 Ultra", model:"Samsung Galaxy S25 Ultra 5G", memory:"12/512", capacity:"512GB", condition:"Usado", stockStatus:"available", location:PRIMARY, stock:2, queue:49, aging:49, price:12999, referencePrice:12999, residualPrice:4500, archived:false, img:"https://fdn2.gsmarena.com/vv/bigpic/samsung-galaxy-s25-ultra.jpg",
+  {id:"galaxy-s25-ultra-512-usado", name:"Galaxy S25 Ultra", model:"Samsung Galaxy S25 Ultra 5G", memory:"12/512", capacity:"512GB", condition:"Usado", stockStatus:"available", location:PRIMARY, stock:2, queue:49, aging:49, price:12999, archived:false, img:"https://fdn2.gsmarena.com/vv/bigpic/samsung-galaxy-s25-ultra.jpg",
    colors:[{name:"Preto",qty:1,class:"black"},{name:"Prata",qty:1,class:"gray"}],
    units:[
-     {name:"Leapfone",   type:"B2C", archived:false, plans:{mensal:429,anual:389,bbMensal:349,bb21:329}},
-     {name:"Empresa Beta",type:"B2B",archived:false, plans:{mensal:399}}
+     {name:"Leapfone",    type:"B2C", archived:false, plans:[
+       {name:"Mensal", valor:429, referencia:12999, residual:4500},
+       {name:"Anual",  valor:389, referencia:12999, residual:4000},
+       {name:"BB",     valor:349, referencia:12999, residual:3500}
+     ]},
+     {name:"Empresa Beta",type:"B2B",archived:false, plans:[
+       {name:"Mensal", valor:399, referencia:12999, residual:4500}
+     ]}
    ],
    priceHistory:[
-     {unit:"Leapfone",   type:"B2C", refPrice:12999, plans:{mensal:449,anual:409,bbMensal:369,bb21:359}, date:"Jan 2025", current:false},
-     {unit:"Leapfone",   type:"B2C", refPrice:12999, plans:{mensal:429,anual:389,bbMensal:349,bb21:329}, date:"Mar 2025", current:true},
-     {unit:"Empresa Beta",type:"B2B",refPrice:12999, plans:{mensal:399}, date:"Jan 2025", current:true},
+     {unit:"Leapfone",    type:"B2C", planName:"Mensal", valor:449, referencia:12999, residual:4500, date:"Jan 2025", current:false},
+     {unit:"Leapfone",    type:"B2C", planName:"Mensal", valor:429, referencia:12999, residual:4500, date:"Mar 2025", current:true},
+     {unit:"Empresa Beta",type:"B2B", planName:"Mensal", valor:399, referencia:12999, residual:4500, date:"Jan 2025", current:true}
    ],
    history:["Mar 2025 — Preço Leapfone atualizado","Jan 2025 — SKU criado"]},
 
-  {id:"moto-g04s-128-usado", name:"Moto G04s", model:"Motorola Moto G04s", memory:"4/128", capacity:"128GB", condition:"Usado", stockStatus:"available", location:PRIMARY, stock:32, queue:15, aging:15, price:879, referencePrice:879, residualPrice:300, archived:false, img:"https://fdn2.gsmarena.com/vv/bigpic/motorola-moto-g04s.jpg",
+  {id:"moto-g04s-128-usado", name:"Moto G04s", model:"Motorola Moto G04s", memory:"4/128", capacity:"128GB", condition:"Usado", stockStatus:"available", location:PRIMARY, stock:32, queue:15, aging:15, price:879, archived:false, img:"https://fdn2.gsmarena.com/vv/bigpic/motorola-moto-g04s.jpg",
    colors:[{name:"Grafite",qty:26,class:"gray"},{name:"Coral",qty:6,class:"orange"}],
    units:[
-     {name:"Leapfone",type:"B2C",archived:false,plans:{mensal:59,anual:49,bbMensal:39,bb21:35}}
+     {name:"Leapfone",type:"B2C",archived:false,plans:[
+       {name:"Mensal", valor:59, referencia:879, residual:300},
+       {name:"Anual",  valor:49, referencia:879, residual:250},
+       {name:"BB",     valor:39, referencia:879, residual:200}
+     ]}
    ],
    priceHistory:[
-     {unit:"Leapfone",type:"B2C",refPrice:879,plans:{mensal:59,anual:49,bbMensal:39,bb21:35},date:"Nov 2023",current:true},
+     {unit:"Leapfone",type:"B2C",planName:"Mensal",valor:59,referencia:879,residual:300,date:"Nov 2023",current:true}
    ],
    history:["Nov 2023 — SKU criado"]},
 
-  {id:"moto-g06-128-novo", name:"Moto G06", model:"Motorola Moto G06 4G", memory:"4/128", capacity:"128GB", condition:"Novo", stockStatus:"available", location:PRIMARY, stock:1, queue:148, aging:148, price:799, referencePrice:799, residualPrice:270, archived:false, img:"https://fdn2.gsmarena.com/vv/bigpic/motorola-moto-g06.jpg",
+  {id:"moto-g06-128-novo", name:"Moto G06", model:"Motorola Moto G06 4G", memory:"4/128", capacity:"128GB", condition:"Novo", stockStatus:"available", location:PRIMARY, stock:1, queue:148, aging:148, price:799, archived:false, img:"https://fdn2.gsmarena.com/vv/bigpic/motorola-moto-g06.jpg",
    colors:[{name:"Azul-marinho",qty:1,class:"blue"}],
    units:[
-     {name:"Leapfone",type:"B2C", archived:false,plans:{mensal:49,anual:39,bbMensal:29,bb21:25}},
-     {name:"BYOD",    type:"BYOD",archived:false,plans:{mensal:39}}
+     {name:"Leapfone",type:"B2C", archived:false,plans:[
+       {name:"Mensal", valor:49, referencia:799, residual:270},
+       {name:"Anual",  valor:39, referencia:799, residual:220},
+       {name:"BB",     valor:29, referencia:799, residual:180}
+     ]},
+     {name:"BYOD",    type:"BYOD",archived:false,plans:[
+       {name:"Mensal", valor:39, referencia:799, residual:270}
+     ]}
    ],
    priceHistory:[
-     {unit:"Leapfone",type:"B2C", refPrice:799,plans:{mensal:49,anual:39,bbMensal:29,bb21:25},date:"Ago 2024",current:true},
-     {unit:"BYOD",    type:"BYOD",refPrice:799,plans:{mensal:39},date:"Ago 2024",current:true},
+     {unit:"Leapfone",type:"B2C", planName:"Mensal",valor:49,referencia:799,residual:270,date:"Ago 2024",current:true},
+     {unit:"BYOD",    type:"BYOD",planName:"Mensal",valor:39,referencia:799,residual:270,date:"Ago 2024",current:true}
    ],
    history:["Ago 2024 — SKU criado"]},
 
-  {id:"iphone-13-128-quebrado", name:"iPhone 13", model:"Apple iPhone 13 5G", memory:"4/128", capacity:"128GB", condition:"Usado", stockStatus:"broken", location:BROKEN, stock:4, queue:0, aging:92, price:7599, referencePrice:7599, residualPrice:2100, archived:false, img:"https://fdn2.gsmarena.com/vv/bigpic/apple-iphone-13.jpg",
+  {id:"iphone-13-128-quebrado", name:"iPhone 13", model:"Apple iPhone 13 5G", memory:"4/128", capacity:"128GB", condition:"Usado", stockStatus:"broken", location:BROKEN, stock:4, queue:0, aging:92, price:7599, archived:false, img:"https://fdn2.gsmarena.com/vv/bigpic/apple-iphone-13.jpg",
    colors:[{name:"Preto",qty:2,class:"black"},{name:"Branco",qty:1,class:"white"}],
    units:[
-     {name:"Leapfone",type:"B2C",archived:false,plans:{mensal:189,anual:169,bbMensal:149,bb21:139}}
+     {name:"Leapfone",type:"B2C",archived:false,plans:[
+       {name:"Mensal", valor:189, referencia:7599, residual:2100},
+       {name:"Anual",  valor:169, referencia:7599, residual:1800},
+       {name:"BB",     valor:149, referencia:7599, residual:1600}
+     ]}
    ],
    priceHistory:[
-     {unit:"Leapfone",type:"B2C",refPrice:7599,plans:{mensal:219,anual:199,bbMensal:169,bb21:159},date:"Mai 2023",current:false},
-     {unit:"Leapfone",type:"B2C",refPrice:7599,plans:{mensal:199,anual:179,bbMensal:155,bb21:145},date:"Nov 2023",current:false},
-     {unit:"Leapfone",type:"B2C",refPrice:7599,plans:{mensal:189,anual:169,bbMensal:149,bb21:139},date:"Abr 2024",current:true},
+     {unit:"Leapfone",type:"B2C",planName:"Mensal",valor:219,referencia:7599,residual:2100,date:"Mai 2023",current:false},
+     {unit:"Leapfone",type:"B2C",planName:"Mensal",valor:199,referencia:7599,residual:2100,date:"Nov 2023",current:false},
+     {unit:"Leapfone",type:"B2C",planName:"Mensal",valor:189,referencia:7599,residual:2100,date:"Abr 2024",current:true}
    ],
    history:["Abr 2024 — Movido para quebrados","Nov 2023 — Preço Leapfone alterado de R$ 219 para R$ 199 → R$ 189","Mai 2023 — SKU criado"]}
 ];
@@ -938,36 +1011,23 @@ function toggleUnitArchive(productId, unitIdx) {
   openDetail(productId);
 }
 
-function openPriceDrawer(id, unitIdx) {
+function openPriceDrawer(id, unitIdx, planIdx) {
   selectedId = id;
   selectedUnitIdx = unitIdx;
+  selectedPlanIdx = planIdx;
   const p = products.find(x => x.id === id);
   const u = p.units[unitIdx];
+  const plan = u.plans[planIdx];
   document.getElementById("drawerSku").innerText  = `${p.name} · ${p.capacity} · ${p.condition}`;
   document.getElementById("drawerUnit").innerText = `Unidade: ${u.name}`;
 
   let bodyHtml = "";
-
-  // Reference price + residual side by side
-  bodyHtml += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">`;
-  bodyHtml += `<div class="field"><label>Preço de referência</label><input id="newRefPrice" type="number" value="${p.referencePrice}"></div>`;
-  bodyHtml += `<div class="field"><label>Residual</label><input id="newResidual" type="number" value="${p.residualPrice || 0}"></div>`;
+  bodyHtml += `<span class="planChip">Plano: ${plan.name}</span>`;
+  bodyHtml += `<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:20px">`;
+  bodyHtml += `<div class="field"><label>Valor</label><input id="planValor" type="number" value="${plan.valor}"></div>`;
+  bodyHtml += `<div class="field"><label>Referência</label><input id="planReferencia" type="number" value="${plan.referencia}"></div>`;
+  bodyHtml += `<div class="field"><label>Residual</label><input id="planResidual" type="number" value="${plan.residual}"></div>`;
   bodyHtml += `</div>`;
-
-  if (u.type === "B2C") {
-    bodyHtml += `<p style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin:0 0 10px">Planos</p>`;
-    bodyHtml += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">`;
-    bodyHtml += `<div class="field"><label>Mensal</label><input id="planMensal" type="number" value="${u.plans.mensal || ""}"></div>`;
-    bodyHtml += `<div class="field"><label>Anual</label><input id="planAnual" type="number" value="${u.plans.anual || ""}"></div>`;
-    bodyHtml += `<div class="field"><label>BB Mensal</label><input id="planBbMensal" type="number" value="${u.plans.bbMensal || ""}"></div>`;
-    bodyHtml += `<div class="field"><label>BB 21</label><input id="planBb21" type="number" value="${u.plans.bb21 || ""}"></div>`;
-    bodyHtml += `</div>`;
-  } else {
-    bodyHtml += `<p style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin:0 0 10px">Planos</p>`;
-    bodyHtml += `<div style="margin-bottom:20px">`;
-    bodyHtml += `<div class="field"><label>Mensal</label><input id="planMensal" type="number" value="${u.plans.mensal || ""}"></div>`;
-    bodyHtml += `</div>`;
-  }
 
   document.getElementById("drawerBody").innerHTML = bodyHtml;
   document.getElementById("priceDrawer").classList.add("open");
@@ -978,37 +1038,26 @@ function closePriceDrawer() { document.getElementById("priceDrawer").classList.r
 function savePrice() {
   const p = products.find(x => x.id === selectedId);
   const u = p.units[selectedUnitIdx];
+  const plan = u.plans[selectedPlanIdx];
 
-  const newRefPrice = Number(document.getElementById("newRefPrice").value) || p.referencePrice;
-  const newResidual = Number(document.getElementById("newResidual").value);
-  p.referencePrice = newRefPrice;
-  p.residualPrice  = newResidual;
+  const newValor     = Number(document.getElementById("planValor").value)     || plan.valor;
+  const newReferencia = Number(document.getElementById("planReferencia").value) || plan.referencia;
+  const newResidual  = Number(document.getElementById("planResidual").value);
 
-  let newPlans;
-  if (u.type === "B2C") {
-    newPlans = {
-      mensal:   Number(document.getElementById("planMensal").value)   || u.plans.mensal,
-      anual:    Number(document.getElementById("planAnual").value)     || u.plans.anual,
-      bbMensal: Number(document.getElementById("planBbMensal").value) || u.plans.bbMensal,
-      bb21:     Number(document.getElementById("planBb21").value)     || u.plans.bb21
-    };
-  } else {
-    newPlans = {
-      mensal: Number(document.getElementById("planMensal").value) || u.plans.mensal
-    };
-  }
-
-  const plansChanged = JSON.stringify(newPlans) !== JSON.stringify(u.plans);
-  if (!plansChanged && newRefPrice === p.referencePrice && newResidual === (p.residualPrice || 0)) {
+  const changed = newValor !== plan.valor || newReferencia !== plan.referencia || newResidual !== plan.residual;
+  if (!changed) {
     alert("Nenhum valor foi alterado.");
     return;
   }
 
   const now = new Date().toLocaleDateString("pt-BR",{month:"short",year:"numeric"}).replace(".","");
-  p.priceHistory.filter(h => h.unit === u.name && h.current).forEach(h => h.current = false);
-  p.priceHistory.push({unit:u.name, type:u.type, refPrice:newRefPrice, plans:newPlans, date:now, current:true});
-  p.history.unshift(`${now} — Preços ${u.name} atualizados`);
-  u.plans = newPlans;
+  p.priceHistory.filter(h => h.unit === u.name && h.planName === plan.name && h.current).forEach(h => h.current = false);
+  p.priceHistory.push({unit:u.name, type:u.type, planName:plan.name, valor:newValor, referencia:newReferencia, residual:newResidual, date:now, current:true});
+  p.history.unshift(`${now} — Preços ${u.name} / ${plan.name} atualizados`);
+
+  plan.valor     = newValor;
+  plan.referencia = newReferencia;
+  plan.residual  = newResidual;
 
   closePriceDrawer();
   openDetail(selectedId);
@@ -1030,48 +1079,95 @@ function openDetail(id) {
   const d = document.getElementById("detailPage");
   d.classList.add("active");
 
-  // Build pricing table rows
-  const pricingRows = p.units.map((u, i) => {
-    const isB2C = u.type === "B2C";
-    const mensal   = isB2C ? `R$ ${u.plans.mensal}` : `R$ ${u.plans.mensal}`;
-    const anual    = isB2C ? `R$ ${u.plans.anual}`    : `—`;
-    const bbMensal = isB2C ? `R$ ${u.plans.bbMensal}` : `—`;
-    const bb21     = isB2C ? `R$ ${u.plans.bb21}`     : `—`;
-    const statusCell = u.archived
+  // Build Leapfone card (B2C unit)
+  const leapfoneUnit = p.units.find(u => u.type === "B2C");
+  const leapfoneIdx  = p.units.findIndex(u => u.type === "B2C");
+  let leapfoneCardHtml = "";
+  if (leapfoneUnit) {
+    const headerOpacity = 1;
+    const bodyOpacity   = leapfoneUnit.archived ? "opacity:0.45;" : "";
+    const statusPill    = leapfoneUnit.archived
       ? `<span class="status hiddenStatus">Arquivado</span>`
       : `<span class="status activeStatus">Ativo</span>`;
-    const actionsCell = u.archived
-      ? `<button class="unitActivateBtn" onclick="event.stopPropagation();toggleUnitArchive('${p.id}',${i})">Ativar</button>`
-      : `<button class="unitEditBtn" onclick="event.stopPropagation();openPriceDrawer('${p.id}',${i})">Editar</button> <button class="unitArchiveBtn" onclick="event.stopPropagation();toggleUnitArchive('${p.id}',${i})">Arquivar</button>`;
-    return `
+    const archiveBtn    = leapfoneUnit.archived
+      ? `<button class="unitActivateBtn" onclick="event.stopPropagation();toggleUnitArchive('${p.id}',${leapfoneIdx})">Ativar</button>`
+      : `<button class="unitArchiveBtn"  onclick="event.stopPropagation();toggleUnitArchive('${p.id}',${leapfoneIdx})">Arquivar</button>`;
+
+    const planRows = leapfoneUnit.plans.map((pl, pi) => `
+      <tr>
+        <td style="color:var(--muted);font-size:13px">${pl.name}</td>
+        <td><strong style="font-size:15px">R$ ${pl.valor.toLocaleString("pt-BR")}</strong></td>
+        <td style="color:var(--muted)">R$ ${pl.referencia.toLocaleString("pt-BR")}</td>
+        <td style="color:var(--muted)">R$ ${pl.residual.toLocaleString("pt-BR")}</td>
+        <td style="white-space:nowrap"><button class="unitEditBtn" onclick="event.stopPropagation();openPriceDrawer('${p.id}',${leapfoneIdx},${pi})">Editar</button></td>
+      </tr>`).join("");
+
+    leapfoneCardHtml = `
+      <div style="border:1px solid var(--border);border-radius:10px;background:var(--surface);margin-bottom:20px">
+        <div style="padding:16px 20px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="font-weight:700;font-size:15px">Leapfone</span>
+            ${typeBadge("B2C")}
+            ${statusPill}
+          </div>
+          <div>${archiveBtn}</div>
+        </div>
+        <div style="${bodyOpacity}padding:0">
+          <table class="miniTable" style="border:0;margin:0">
+            <tr>
+              <th>Plano</th>
+              <th>Valor</th>
+              <th>Referência</th>
+              <th>Residual</th>
+              <th></th>
+            </tr>
+            ${planRows}
+          </table>
+        </div>
+      </div>`;
+  }
+
+  // Build B2B/BYOD units table
+  const otherUnits = p.units.map((u, i) => ({u, i})).filter(({u}) => u.type !== "B2C");
+  let otherUnitsHtml = "";
+  if (otherUnits.length > 0) {
+    const otherRows = otherUnits.map(({u, i}) => {
+      const plan = u.plans[0];
+      const statusCell = u.archived
+        ? `<span class="status hiddenStatus">Arquivado</span>`
+        : `<span class="status activeStatus">Ativo</span>`;
+      const actionsCell = u.archived
+        ? `<button class="unitActivateBtn" onclick="event.stopPropagation();toggleUnitArchive('${p.id}',${i})">Ativar</button>`
+        : `<button class="unitEditBtn" onclick="event.stopPropagation();openPriceDrawer('${p.id}',${i},0)">Editar</button> <button class="unitArchiveBtn" onclick="event.stopPropagation();toggleUnitArchive('${p.id}',${i})">Arquivar</button>`;
+      return `
         <tr class="unitRow${u.archived ? ' unitArchived' : ''}">
           <td><strong>${u.name}</strong></td>
           <td>${typeBadge(u.type)}</td>
-          <td><strong>${mensal}</strong></td>
-          <td>${anual}</td>
-          <td>${bbMensal}</td>
-          <td>${bb21}</td>
+          <td><strong>R$ ${plan.valor.toLocaleString("pt-BR")}</strong></td>
+          <td style="color:var(--muted)">R$ ${plan.referencia.toLocaleString("pt-BR")}</td>
+          <td style="color:var(--muted)">R$ ${plan.residual.toLocaleString("pt-BR")}</td>
           <td>${statusCell}</td>
-          <td>${actionsCell}</td>
+          <td style="white-space:nowrap">${actionsCell}</td>
         </tr>`;
-  }).join("");
+    }).join("");
+
+    otherUnitsHtml = `
+      <p class="sectionLabel">Outras unidades</p>
+      <table class="miniTable">
+        <tr><th>Unidade</th><th>Tipo</th><th>Mensal</th><th>Referência</th><th>Residual</th><th>Status</th><th></th></tr>
+        ${otherRows}
+      </table>`;
+  }
 
   // Build history table rows
   const historyRows = p.priceHistory.map(h => {
-    const isB2C = h.type === "B2C";
-    const anual    = isB2C ? `R$ ${h.plans.anual}`    : `—`;
-    const bbMensal = isB2C ? `R$ ${h.plans.bbMensal}` : `—`;
-    const bb21     = isB2C ? `R$ ${h.plans.bb21}`     : `—`;
     return `
         <tr>
           <td><strong>${h.unit}</strong></td>
-          <td>${typeBadge(h.type)}</td>
-          <td style="color:var(--muted)">R$ ${h.refPrice.toLocaleString("pt-BR")}</td>
-          <td style="color:var(--muted)">R$ ${(p.residualPrice || 0).toLocaleString("pt-BR")}</td>
-          <td><strong>R$ ${h.plans.mensal}</strong></td>
-          <td>${anual}</td>
-          <td>${bbMensal}</td>
-          <td>${bb21}</td>
+          <td style="color:var(--muted);font-size:12px">${h.planName}</td>
+          <td><strong>R$ ${h.valor.toLocaleString("pt-BR")}</strong></td>
+          <td style="color:var(--muted)">R$ ${h.referencia.toLocaleString("pt-BR")}</td>
+          <td style="color:var(--muted)">R$ ${h.residual.toLocaleString("pt-BR")}</td>
           <td style="color:var(--muted)">${h.date}</td>
           <td>${h.current
             ? `<span style="font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--green);color:var(--greenText)">Atual</span>`
@@ -1120,30 +1216,8 @@ function openDetail(id) {
     </div>
 
     <div id="pricing" class="panel">
-      <div style="display:flex;align-items:center;gap:24px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;background:var(--surface2);margin-bottom:20px">
-        <div style="width:36px;height:36px;border-radius:8px;background:var(--line);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--muted)">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
-            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-          </svg>
-        </div>
-        <div style="flex:1;min-width:0;display:flex;gap:32px;align-items:flex-end">
-          <div>
-            <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px">Preço de referência</div>
-            <div style="font-size:20px;font-weight:700;letter-spacing:-0.02em;color:var(--text)">R$ ${p.referencePrice.toLocaleString("pt-BR")}</div>
-          </div>
-          <div>
-            <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px">Residual</div>
-            <div style="font-size:20px;font-weight:700;letter-spacing:-0.02em;color:var(--text)">R$ ${(p.residualPrice || 0).toLocaleString("pt-BR")}</div>
-          </div>
-        </div>
-        <span style="font-size:12px;font-weight:500;color:var(--subtle);white-space:nowrap">Definido no cadastro · não editável</span>
-      </div>
-      <p class="helper" style="margin-bottom:16px">Preços por unidade e plano. Cada unidade pode ter valores diferentes.</p>
-      <table class="miniTable">
-        <tr><th>Unidade</th><th>Tipo</th><th>Mensal</th><th>Anual</th><th>BB Mensal</th><th>BB 21</th><th>Status</th><th></th></tr>
-        ${pricingRows}
-      </table>
+      ${leapfoneCardHtml}
+      ${otherUnitsHtml}
       <div class="detailActions">
         <button class="secondary" onclick="archiveSku('${p.id}')">Arquivar SKU</button>
       </div>
@@ -1154,13 +1228,10 @@ function openDetail(id) {
       <table class="miniTable" style="margin-bottom:28px">
         <tr>
           <th>Unidade</th>
-          <th>Tipo</th>
-          <th>Ref.</th>
+          <th>Plano</th>
+          <th>Valor</th>
+          <th>Referência</th>
           <th>Residual</th>
-          <th>Mensal</th>
-          <th>Anual</th>
-          <th>BB Mensal</th>
-          <th>BB 21</th>
           <th>Desde</th>
           <th>Status</th>
         </tr>
