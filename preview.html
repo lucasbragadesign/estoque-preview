@@ -585,6 +585,103 @@ tr.unitArchived td:last-child { opacity:1; }
   .hideSmall { display: none; }
   .filters { grid-template-columns: 1fr 1fr; }
 }
+
+/* ─── Bulk Price Modal ────────────────────────── */
+.bulkModal {
+  display: none;
+  position: fixed;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  width: 900px; max-width: 94vw;
+  max-height: 88vh;
+  border-radius: 12px;
+  padding: 32px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: 0 8px 48px rgba(0,0,0,0.18);
+  z-index: 20;
+  overflow-y: auto;
+}
+.bulkModal.open { display: block; }
+.bulkModal h2 { margin: 0 0 6px; font-size: 20px; font-weight: 700; }
+
+.diffPos { background: var(--green); color: var(--greenText); font-size:12px; font-weight:600; border-radius:999px; padding:3px 10px; }
+.diffNeg { background: var(--amber-soft); color: var(--amber-soft-text); font-size:12px; font-weight:600; border-radius:999px; padding:3px 10px; }
+
+.bulkActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+}
+.bulkSuccess {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 32px;
+  gap: 16px;
+  text-align: center;
+}
+.bulkSuccess .successIcon {
+  color: var(--greenText);
+  opacity: 0.9;
+}
+.bulkSuccess .successTitle {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0;
+}
+.bulkSuccess .successSub {
+  color: var(--muted);
+  font-size: 14px;
+  margin: 0;
+}
+
+/* ─── Drop zone & column hint ─────────────────── */
+.dropZone {
+  border: 2px dashed var(--border);
+  border-radius: 12px;
+  padding: 40px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  color: var(--muted);
+}
+.dropZone:hover { border-color: var(--blue); background: var(--blue-soft); color: var(--blue); }
+.dropZone svg { margin-bottom: 12px; display: block; margin-left: auto; margin-right: auto; }
+.dropZone .dropTitle { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+.dropZone .dropSub { font-size: 13px; color: var(--muted); }
+
+.colFormatHint {
+  display: flex;
+  gap: 0;
+  margin-top: 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  font-size: 12px;
+}
+.colFormatHint span {
+  flex: 1;
+  padding: 8px 10px;
+  background: var(--surface2);
+  border-right: 1px solid var(--border);
+  font-weight: 600;
+  color: var(--muted);
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.colFormatHint span:last-child { border-right: none; }
+
+/* ─── Match summary chips ─────────────────────── */
+.matchSummary { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.chipFound { background: var(--green); color: var(--greenText); font-size: 13px; font-weight: 600; border-radius: 999px; padding: 4px 12px; }
+.chipPartial { background: var(--amber-soft); color: var(--amber-soft-text); font-size: 13px; font-weight: 600; border-radius: 999px; padding: 4px 12px; }
+.chipNotFound { background: var(--red); color: var(--redText); font-size: 13px; font-weight: 600; border-radius: 999px; padding: 4px 12px; }
 </style>
 </head>
 
@@ -727,6 +824,13 @@ tr.unitArchived td:last-child { opacity:1; }
         <div><label>Unidade</label><select id="unit" onchange="render()"><option value="">Todas</option><option>Leapfone</option><option>Empresa Alpha</option><option>Empresa Beta</option><option>BYOD</option></select></div>
       </section>
 
+      <div style="display:flex;justify-content:flex-end;margin-bottom:16px">
+        <button class="secondary" onclick="openBulkModal()" style="display:inline-flex;align-items:center;gap:8px">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          Editar preços em massa
+        </button>
+      </div>
+
       <p class="helper" style="margin-bottom:12px">Cada linha representa um SKU: modelo + capacidade + condição. Clique para ver detalhes e preços por unidade.</p>
 
       <section class="table">
@@ -742,7 +846,11 @@ tr.unitArchived td:last-child { opacity:1; }
   </main>
 </div>
 
-<div id="overlay" class="overlay"></div>
+<div id="overlay" class="overlay" onclick="closeBulkModal()"></div>
+
+<div id="bulkPriceModal" class="bulkModal">
+  <div id="bulkModalContent"></div>
+</div>
 
 <aside id="priceDrawer" class="drawer">
   <button class="secondary" onclick="closePriceDrawer()" style="margin-bottom:8px">← Fechar</button>
@@ -1259,6 +1367,325 @@ function switchTab(e, id) {
 }
 
 render();
+
+// ─── Bulk Price Edit ───────────────────────────────────
+let bulkStep = 1;
+let bulkUnit = "Leapfone";
+let bulkPlan = "Mensal";
+let bulkChanges = {};
+
+function openBulkModal() {
+  bulkStep = 1;
+  bulkUnit = "Leapfone";
+  bulkPlan = "Mensal";
+  bulkChanges = {};
+  document.getElementById("bulkPriceModal").classList.add("open");
+  document.getElementById("overlay").classList.add("open");
+  renderBulkStep1();
+}
+
+function closeBulkModal() {
+  document.getElementById("bulkPriceModal").classList.remove("open");
+  document.getElementById("overlay").classList.remove("open");
+  bulkChanges = {};
+}
+
+function getBulkPlanOptions(unit) {
+  if (unit === "Leapfone") {
+    return ["Mensal", "Anual", "BB"];
+  }
+  return ["Mensal"];
+}
+
+function renderBulkStep1() {
+  bulkStep = 1;
+  const planOptions = getBulkPlanOptions(bulkUnit);
+  const isLeapfone = bulkUnit === "Leapfone";
+
+  // Filter products that have the selected unit
+  const filtered = products.filter(p =>
+    p.units.some(u => u.name === bulkUnit)
+  );
+
+  const planSelectOptions = planOptions.map(pl =>
+    `<option value="${pl}" ${pl === bulkPlan ? "selected" : ""}>${pl}</option>`
+  ).join("");
+
+  const tableRows = filtered.map(p => {
+    const unitObj = p.units.find(u => u.name === bulkUnit);
+    const planObj = unitObj ? unitObj.plans.find(pl => pl.name === bulkPlan) : null;
+    if (!planObj) return "";
+    const currentValor = planObj.valor;
+    const pendingVal = bulkChanges[p.id] !== undefined ? bulkChanges[p.id] : "";
+    let diffHtml = "";
+    if (pendingVal !== "" && pendingVal !== null) {
+      const diff = Number(pendingVal) - currentValor;
+      if (diff > 0) diffHtml = `<span class="diffPos">+R$ ${diff.toLocaleString("pt-BR")}</span>`;
+      else if (diff < 0) diffHtml = `<span class="diffNeg">-R$ ${Math.abs(diff).toLocaleString("pt-BR")}</span>`;
+    }
+    return `
+      <tr>
+        <td>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div class="thumb" style="flex-shrink:0"><img src="${p.img}" alt="${p.name}" onerror="this.style.display='none'"></div>
+            <div>
+              <div style="font-weight:600;font-size:14px">${p.name}</div>
+              <div style="color:var(--muted);font-size:12px">${p.capacity} · ${p.condition}</div>
+            </div>
+          </div>
+        </td>
+        <td style="font-weight:600">R$ ${currentValor.toLocaleString("pt-BR")}</td>
+        <td>
+          <input type="number" min="0" placeholder="${currentValor}"
+            value="${pendingVal}"
+            style="width:120px;height:36px;font-size:14px"
+            oninput="onBulkInput('${p.id}', this.value, ${currentValor})"
+            onchange="onBulkInput('${p.id}', this.value, ${currentValor})">
+        </td>
+        <td id="diff-${p.id}">${diffHtml}</td>
+      </tr>`;
+  }).join("");
+
+  const changedCount = Object.keys(bulkChanges).filter(id => {
+    const p = products.find(x => x.id === id);
+    if (!p) return false;
+    const unitObj = p.units.find(u => u.name === bulkUnit);
+    const planObj = unitObj ? unitObj.plans.find(pl => pl.name === bulkPlan) : null;
+    if (!planObj) return false;
+    return bulkChanges[id] !== "" && bulkChanges[id] !== undefined && Number(bulkChanges[id]) !== planObj.valor;
+  }).length;
+
+  document.getElementById("bulkModalContent").innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
+      <div>
+        <h2>Editar preços em massa</h2>
+        <p style="color:var(--muted);font-size:14px;margin:0">Selecione a unidade e o plano para atualizar preços de múltiplos produtos.</p>
+      </div>
+      <button class="secondary" onclick="closeBulkModal()" style="height:36px;padding:0 14px;font-size:13px">✕ Fechar</button>
+    </div>
+
+    <div class="bulkFilters">
+      <div>
+        <label>Unidade</label>
+        <select id="bulkUnitSel" onchange="onBulkUnitChange(this.value)">
+          <option value="Leapfone" ${bulkUnit === "Leapfone" ? "selected" : ""}>Leapfone</option>
+          <option value="Empresa Alpha" ${bulkUnit === "Empresa Alpha" ? "selected" : ""}>Empresa Alpha</option>
+          <option value="Empresa Beta" ${bulkUnit === "Empresa Beta" ? "selected" : ""}>Empresa Beta</option>
+          <option value="BYOD" ${bulkUnit === "BYOD" ? "selected" : ""}>BYOD</option>
+        </select>
+      </div>
+      <div>
+        <label>Plano</label>
+        <select id="bulkPlanSel" onchange="onBulkPlanChange(this.value)" ${!isLeapfone ? "disabled" : ""}>
+          ${planSelectOptions}
+        </select>
+      </div>
+    </div>
+
+    <p class="bulkRowCount">${filtered.length} produto${filtered.length !== 1 ? "s" : ""} · unidade ${bulkUnit} · plano ${bulkPlan}</p>
+
+    <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden">
+      <table class="miniTable" style="border:0">
+        <thead>
+          <tr>
+            <th>Produto</th>
+            <th>Preço atual</th>
+            <th>Novo valor</th>
+            <th>Diferença</th>
+          </tr>
+        </thead>
+        <tbody>${tableRows}</tbody>
+      </table>
+    </div>
+
+    <div class="bulkActions">
+      <button class="secondary" onclick="closeBulkModal()">Cancelar</button>
+      <button id="bulkReviewBtn" onclick="renderBulkStep2()" ${changedCount === 0 ? "disabled style=\"opacity:0.45;cursor:not-allowed\"" : ""}>
+        Revisar alterações →
+      </button>
+    </div>`;
+}
+
+function onBulkUnitChange(val) {
+  bulkUnit = val;
+  const plans = getBulkPlanOptions(val);
+  bulkPlan = plans[0];
+  bulkChanges = {};
+  renderBulkStep1();
+}
+
+function onBulkPlanChange(val) {
+  bulkPlan = val;
+  bulkChanges = {};
+  renderBulkStep1();
+}
+
+function onBulkInput(productId, newVal, currentValor) {
+  const trimmed = newVal.trim();
+  if (trimmed === "" || trimmed === null) {
+    delete bulkChanges[productId];
+  } else {
+    const num = Number(trimmed);
+    if (!isNaN(num) && num !== currentValor) {
+      bulkChanges[productId] = num;
+    } else if (!isNaN(num) && num === currentValor) {
+      delete bulkChanges[productId];
+    }
+  }
+
+  // Update diff cell without re-rendering the whole table
+  const diffCell = document.getElementById("diff-" + productId);
+  if (diffCell) {
+    let diffHtml = "";
+    if (bulkChanges[productId] !== undefined) {
+      const diff = bulkChanges[productId] - currentValor;
+      if (diff > 0) diffHtml = `<span class="diffPos">+R$ ${diff.toLocaleString("pt-BR")}</span>`;
+      else if (diff < 0) diffHtml = `<span class="diffNeg">-R$ ${Math.abs(diff).toLocaleString("pt-BR")}</span>`;
+    }
+    diffCell.innerHTML = diffHtml;
+  }
+
+  // Update review button state
+  const changedCount = Object.keys(bulkChanges).length;
+  const btn = document.getElementById("bulkReviewBtn");
+  if (btn) {
+    if (changedCount > 0) {
+      btn.removeAttribute("disabled");
+      btn.removeAttribute("style");
+    } else {
+      btn.setAttribute("disabled", "");
+      btn.setAttribute("style", "opacity:0.45;cursor:not-allowed");
+    }
+  }
+}
+
+function renderBulkStep2() {
+  bulkStep = 2;
+
+  const changedProducts = Object.keys(bulkChanges).map(id => {
+    const p = products.find(x => x.id === id);
+    if (!p) return null;
+    const unitObj = p.units.find(u => u.name === bulkUnit);
+    const planObj = unitObj ? unitObj.plans.find(pl => pl.name === bulkPlan) : null;
+    if (!planObj) return null;
+    const newVal = bulkChanges[id];
+    if (newVal === undefined || newVal === "" || Number(newVal) === planObj.valor) return null;
+    return { p, unitObj, planObj, newVal: Number(newVal) };
+  }).filter(Boolean);
+
+  const planBadge = `<span style="font-size:12px;font-weight:600;border-radius:6px;padding:4px 10px;background:var(--neutral);color:var(--neutralText)">${bulkPlan}</span>`;
+
+  const tableRows = changedProducts.map(({ p, planObj, newVal }) => {
+    const diff = newVal - planObj.valor;
+    const diffHtml = diff > 0
+      ? `<span class="diffPos">+R$ ${diff.toLocaleString("pt-BR")}</span>`
+      : `<span class="diffNeg">-R$ ${Math.abs(diff).toLocaleString("pt-BR")}</span>`;
+    return `
+      <tr>
+        <td>
+          <div style="font-weight:600;font-size:14px">${p.name}</div>
+          <div style="color:var(--muted);font-size:12px">${p.capacity} · ${p.condition}</div>
+        </td>
+        <td><strong>${bulkUnit}</strong></td>
+        <td>${planBadge}</td>
+        <td>R$ ${planObj.valor.toLocaleString("pt-BR")}</td>
+        <td><strong style="font-size:15px">R$ ${newVal.toLocaleString("pt-BR")}</strong></td>
+        <td>${diffHtml}</td>
+        <td><span style="font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--green);color:var(--greenText)">Pronto</span></td>
+      </tr>`;
+  }).join("");
+
+  document.getElementById("bulkModalContent").innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px">
+      <button class="secondary" onclick="renderBulkStep1()" style="height:36px;padding:0 14px;font-size:13px">← Voltar</button>
+      <div>
+        <h2 style="display:inline">Revisar alterações</h2>
+      </div>
+    </div>
+    <p style="color:var(--muted);font-size:14px;margin:8px 0 24px">Confirme as alterações antes de aplicar. <strong>${changedProducts.length} produto${changedProducts.length !== 1 ? "s" : ""}</strong> serão atualizados.</p>
+
+    <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden">
+      <table class="miniTable" style="border:0">
+        <thead>
+          <tr>
+            <th>Produto</th>
+            <th>Unidade</th>
+            <th>Plano</th>
+            <th>Preço atual</th>
+            <th>Novo valor</th>
+            <th>Diferença</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>${tableRows}</tbody>
+      </table>
+    </div>
+
+    <div class="bulkActions">
+      <button class="secondary" onclick="renderBulkStep1()">← Voltar</button>
+      <button onclick="applyBulkPrices()">Aplicar ${changedProducts.length} alteraç${changedProducts.length !== 1 ? "ões" : "ão"}</button>
+    </div>`;
+}
+
+function applyBulkPrices() {
+  const now = new Date().toLocaleDateString("pt-BR", { month: "short", year: "numeric" }).replace(".", "");
+  let count = 0;
+
+  Object.keys(bulkChanges).forEach(id => {
+    const p = products.find(x => x.id === id);
+    if (!p) return;
+    const unitObj = p.units.find(u => u.name === bulkUnit);
+    if (!unitObj) return;
+    const planObj = unitObj.plans.find(pl => pl.name === bulkPlan);
+    if (!planObj) return;
+    const newVal = Number(bulkChanges[id]);
+    if (isNaN(newVal) || newVal === planObj.valor) return;
+
+    // Mark old priceHistory entries for this unit+plan as not current
+    p.priceHistory.forEach(h => {
+      if (h.unit === bulkUnit && h.planName === bulkPlan && h.current) {
+        h.current = false;
+      }
+    });
+
+    // Add new history entry
+    p.priceHistory.push({
+      unit: bulkUnit,
+      type: unitObj.type,
+      planName: bulkPlan,
+      valor: newVal,
+      referencia: planObj.referencia,
+      residual: planObj.residual,
+      date: now,
+      current: true
+    });
+
+    // Add to event log
+    p.history.unshift(`${now} — Preço ${bulkPlan} ${bulkUnit} atualizado em massa`);
+
+    // Update plan valor
+    planObj.valor = newVal;
+    count++;
+  });
+
+  // Step 3 — Success
+  bulkStep = 3;
+  const monthLabel = new Date().toLocaleDateString("pt-BR", { month: "short", year: "numeric" }).replace(".", "");
+  const monthCap = monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1);
+
+  document.getElementById("bulkModalContent").innerHTML = `
+    <div class="bulkSuccess">
+      <svg class="successIcon" xmlns="http://www.w3.org/2000/svg" width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <path d="m9 12 2 2 4-4"/>
+      </svg>
+      <p class="successTitle">${count} preço${count !== 1 ? "s" : ""} atualizado${count !== 1 ? "s" : ""}</p>
+      <p class="successSub">Unidade: ${bulkUnit} · Plano: ${bulkPlan} · ${monthCap}</p>
+      <button class="secondary" onclick="closeBulkModal()" style="margin-top:8px">Fechar</button>
+    </div>`;
+
+  bulkChanges = {};
+}
 </script>
 </body>
 </html>
