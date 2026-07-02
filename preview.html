@@ -1368,249 +1368,238 @@ function switchTab(e, id) {
 
 render();
 
-// ─── Bulk Price Edit ───────────────────────────────────
+// ─── Bulk Price Edit (Upload + Match flow) ─────────────
 let bulkStep = 1;
-let bulkUnit = "Leapfone";
-let bulkPlan = "Mensal";
-let bulkChanges = {};
+let bulkMatchedRows = [];
+
+const BULK_SAMPLE_ROWS = [
+  { modelo: "iPhone 15",  capacidade: "128GB", cor: "Preto",   unidade: "Leapfone",       plano: "Mensal", novoValor: 229 },
+  { modelo: "iPhone 15",  capacidade: "128GB", cor: "Verde",   unidade: "Leapfone",       plano: "Mensal", novoValor: 229 },
+  { modelo: "iPhone 16",  capacidade: "128GB", cor: "Preto",   unidade: "Leapfone",       plano: "Anual",  novoValor: 259 },
+  { modelo: "iPhone 14",  capacidade: "256GB", cor: "Azul",    unidade: "Empresa Alpha",  plano: "Mensal", novoValor: 179 },
+  { modelo: "Moto G84",   capacidade: "128GB", cor: "Grafite", unidade: "Leapfone",       plano: "Mensal", novoValor: 99  },
+  { modelo: "iPhone 99",  capacidade: "512GB", cor: "Roxo",    unidade: "Leapfone",       plano: "Mensal", novoValor: 350 }
+];
 
 function openBulkModal() {
   bulkStep = 1;
-  bulkUnit = "Leapfone";
-  bulkPlan = "Mensal";
-  bulkChanges = {};
+  bulkMatchedRows = [];
   document.getElementById("bulkPriceModal").classList.add("open");
   document.getElementById("overlay").classList.add("open");
-  renderBulkStep1();
+  renderBulkUploadStep();
 }
 
 function closeBulkModal() {
   document.getElementById("bulkPriceModal").classList.remove("open");
   document.getElementById("overlay").classList.remove("open");
-  bulkChanges = {};
+  bulkMatchedRows = [];
 }
 
-function getBulkPlanOptions(unit) {
-  if (unit === "Leapfone") {
-    return ["Mensal", "Anual", "BB"];
-  }
-  return ["Mensal"];
-}
-
-function renderBulkStep1() {
+function renderBulkUploadStep() {
   bulkStep = 1;
-  const planOptions = getBulkPlanOptions(bulkUnit);
-  const isLeapfone = bulkUnit === "Leapfone";
-
-  // Filter products that have the selected unit
-  const filtered = products.filter(p =>
-    p.units.some(u => u.name === bulkUnit)
-  );
-
-  const planSelectOptions = planOptions.map(pl =>
-    `<option value="${pl}" ${pl === bulkPlan ? "selected" : ""}>${pl}</option>`
-  ).join("");
-
-  const tableRows = filtered.map(p => {
-    const unitObj = p.units.find(u => u.name === bulkUnit);
-    const planObj = unitObj ? unitObj.plans.find(pl => pl.name === bulkPlan) : null;
-    if (!planObj) return "";
-    const currentValor = planObj.valor;
-    const pendingVal = bulkChanges[p.id] !== undefined ? bulkChanges[p.id] : "";
-    let diffHtml = "";
-    if (pendingVal !== "" && pendingVal !== null) {
-      const diff = Number(pendingVal) - currentValor;
-      if (diff > 0) diffHtml = `<span class="diffPos">+R$ ${diff.toLocaleString("pt-BR")}</span>`;
-      else if (diff < 0) diffHtml = `<span class="diffNeg">-R$ ${Math.abs(diff).toLocaleString("pt-BR")}</span>`;
-    }
-    return `
-      <tr>
-        <td>
-          <div style="display:flex;align-items:center;gap:10px">
-            <div class="thumb" style="flex-shrink:0"><img src="${p.img}" alt="${p.name}" onerror="this.style.display='none'"></div>
-            <div>
-              <div style="font-weight:600;font-size:14px">${p.name}</div>
-              <div style="color:var(--muted);font-size:12px">${p.capacity} · ${p.condition}</div>
-            </div>
-          </div>
-        </td>
-        <td style="font-weight:600">R$ ${currentValor.toLocaleString("pt-BR")}</td>
-        <td>
-          <input type="number" min="0" placeholder="${currentValor}"
-            value="${pendingVal}"
-            style="width:120px;height:36px;font-size:14px"
-            oninput="onBulkInput('${p.id}', this.value, ${currentValor})"
-            onchange="onBulkInput('${p.id}', this.value, ${currentValor})">
-        </td>
-        <td id="diff-${p.id}">${diffHtml}</td>
-      </tr>`;
-  }).join("");
-
-  const changedCount = Object.keys(bulkChanges).filter(id => {
-    const p = products.find(x => x.id === id);
-    if (!p) return false;
-    const unitObj = p.units.find(u => u.name === bulkUnit);
-    const planObj = unitObj ? unitObj.plans.find(pl => pl.name === bulkPlan) : null;
-    if (!planObj) return false;
-    return bulkChanges[id] !== "" && bulkChanges[id] !== undefined && Number(bulkChanges[id]) !== planObj.valor;
-  }).length;
-
   document.getElementById("bulkModalContent").innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px">
       <div>
-        <h2>Editar preços em massa</h2>
-        <p style="color:var(--muted);font-size:14px;margin:0">Selecione a unidade e o plano para atualizar preços de múltiplos produtos.</p>
+        <h2 style="margin:0 0 6px">Importar planilha de preços</h2>
+        <p style="color:var(--muted);font-size:14px;margin:0">Suba uma planilha com os modelos e novos preços. O sistema vai identificar os SKUs automaticamente.</p>
       </div>
-      <button class="secondary" onclick="closeBulkModal()" style="height:36px;padding:0 14px;font-size:13px">✕ Fechar</button>
+      <button class="secondary" onclick="closeBulkModal()" style="height:36px;padding:0 14px;font-size:13px;flex-shrink:0;margin-left:16px">✕ Fechar</button>
     </div>
 
-    <div class="bulkFilters">
-      <div>
-        <label>Unidade</label>
-        <select id="bulkUnitSel" onchange="onBulkUnitChange(this.value)">
-          <option value="Leapfone" ${bulkUnit === "Leapfone" ? "selected" : ""}>Leapfone</option>
-          <option value="Empresa Alpha" ${bulkUnit === "Empresa Alpha" ? "selected" : ""}>Empresa Alpha</option>
-          <option value="Empresa Beta" ${bulkUnit === "Empresa Beta" ? "selected" : ""}>Empresa Beta</option>
-          <option value="BYOD" ${bulkUnit === "BYOD" ? "selected" : ""}>BYOD</option>
-        </select>
-      </div>
-      <div>
-        <label>Plano</label>
-        <select id="bulkPlanSel" onchange="onBulkPlanChange(this.value)" ${!isLeapfone ? "disabled" : ""}>
-          ${planSelectOptions}
-        </select>
-      </div>
+    <label style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;display:block">Arquivo</label>
+    <div class="dropZone" onclick="document.getElementById('csvFileInput').click()"
+         ondragover="event.preventDefault();this.style.borderColor='var(--blue)';this.style.background='var(--blue-soft)'"
+         ondragleave="this.style.borderColor='';this.style.background=''"
+         ondrop="event.preventDefault();this.style.borderColor='';this.style.background='';handleFileDrop(event)">
+      <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="17 8 12 3 7 8"/>
+        <line x1="12" y1="3" x2="12" y2="15"/>
+      </svg>
+      <div class="dropTitle">Solte o arquivo aqui ou clique para selecionar</div>
+      <div class="dropSub">.csv ou .xlsx · máx. 5MB</div>
+    </div>
+    <input type="file" id="csvFileInput" accept=".csv" style="display:none" onchange="handleFileSelect(event)">
+
+    <div class="colFormatHint">
+      <span>Modelo</span>
+      <span>Capacidade</span>
+      <span>Cor</span>
+      <span>Unidade</span>
+      <span>Plano</span>
+      <span>Novo Valor</span>
     </div>
 
-    <p class="bulkRowCount">${filtered.length} produto${filtered.length !== 1 ? "s" : ""} · unidade ${bulkUnit} · plano ${bulkPlan}</p>
-
-    <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden">
-      <table class="miniTable" style="border:0">
-        <thead>
-          <tr>
-            <th>Produto</th>
-            <th>Preço atual</th>
-            <th>Novo valor</th>
-            <th>Diferença</th>
-          </tr>
-        </thead>
-        <tbody>${tableRows}</tbody>
-      </table>
-    </div>
-
-    <div class="bulkActions">
+    <div class="bulkActions" style="justify-content:space-between">
+      <button class="secondary" onclick="loadSampleData()">Usar dados de exemplo</button>
       <button class="secondary" onclick="closeBulkModal()">Cancelar</button>
-      <button id="bulkReviewBtn" onclick="renderBulkStep2()" ${changedCount === 0 ? "disabled style=\"opacity:0.45;cursor:not-allowed\"" : ""}>
-        Revisar alterações →
-      </button>
     </div>`;
 }
 
-function onBulkUnitChange(val) {
-  bulkUnit = val;
-  const plans = getBulkPlanOptions(val);
-  bulkPlan = plans[0];
-  bulkChanges = {};
-  renderBulkStep1();
+function handleFileDrop(event) {
+  const file = event.dataTransfer.files[0];
+  if (file) readCsvFile(file);
 }
 
-function onBulkPlanChange(val) {
-  bulkPlan = val;
-  bulkChanges = {};
-  renderBulkStep1();
+function handleFileSelect(event) {
+  const file = event.target.files[0];
+  if (file) readCsvFile(file);
 }
 
-function onBulkInput(productId, newVal, currentValor) {
-  const trimmed = newVal.trim();
-  if (trimmed === "" || trimmed === null) {
-    delete bulkChanges[productId];
-  } else {
-    const num = Number(trimmed);
-    if (!isNaN(num) && num !== currentValor) {
-      bulkChanges[productId] = num;
-    } else if (!isNaN(num) && num === currentValor) {
-      delete bulkChanges[productId];
-    }
-  }
-
-  // Update diff cell without re-rendering the whole table
-  const diffCell = document.getElementById("diff-" + productId);
-  if (diffCell) {
-    let diffHtml = "";
-    if (bulkChanges[productId] !== undefined) {
-      const diff = bulkChanges[productId] - currentValor;
-      if (diff > 0) diffHtml = `<span class="diffPos">+R$ ${diff.toLocaleString("pt-BR")}</span>`;
-      else if (diff < 0) diffHtml = `<span class="diffNeg">-R$ ${Math.abs(diff).toLocaleString("pt-BR")}</span>`;
-    }
-    diffCell.innerHTML = diffHtml;
-  }
-
-  // Update review button state
-  const changedCount = Object.keys(bulkChanges).length;
-  const btn = document.getElementById("bulkReviewBtn");
-  if (btn) {
-    if (changedCount > 0) {
-      btn.removeAttribute("disabled");
-      btn.removeAttribute("style");
-    } else {
-      btn.setAttribute("disabled", "");
-      btn.setAttribute("style", "opacity:0.45;cursor:not-allowed");
-    }
-  }
+function readCsvFile(file) {
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const text = e.target.result;
+    const lines = text.split("\n").map(l => l.trim()).filter(l => l.length > 0);
+    const rows = lines.map(line => {
+      const parts = line.split(",");
+      return {
+        modelo:     (parts[0] || "").trim(),
+        capacidade: (parts[1] || "").trim(),
+        cor:        (parts[2] || "").trim(),
+        unidade:    (parts[3] || "").trim(),
+        plano:      (parts[4] || "").trim(),
+        novoValor:  Number((parts[5] || "0").trim())
+      };
+    }).filter(r => r.modelo && r.capacidade);
+    runBulkMatch(rows);
+  };
+  reader.readAsText(file);
 }
 
-function renderBulkStep2() {
+function loadSampleData() {
+  runBulkMatch(BULK_SAMPLE_ROWS);
+}
+
+function runBulkMatch(rows) {
+  bulkMatchedRows = rows.map(row => {
+    const modeloLC = row.modelo.toLowerCase();
+
+    // Step 1: find product by name match
+    const product = products.find(p => {
+      const nameLC = p.name.toLowerCase();
+      return nameLC.includes(modeloLC) || modeloLC.includes(nameLC);
+    });
+
+    if (!product) {
+      return { row, status: "notfound", product: null, unitIdx: -1, planIdx: -1, currentValor: null, checked: false };
+    }
+
+    // Step 2: check capacity
+    if (product.capacity.toLowerCase() !== row.capacidade.toLowerCase()) {
+      return { row, status: "notfound", product: null, unitIdx: -1, planIdx: -1, currentValor: null, checked: false };
+    }
+
+    // Step 3: find unit
+    const unitIdx = product.units.findIndex(u => u.name === row.unidade);
+    if (unitIdx === -1) {
+      return { row, status: "partial", product, unitIdx: -1, planIdx: -1, currentValor: null, checked: false };
+    }
+
+    // Step 4: find plan
+    const planIdx = product.units[unitIdx].plans.findIndex(pl => pl.name === row.plano);
+    if (planIdx === -1) {
+      return { row, status: "partial", product, unitIdx, planIdx: -1, currentValor: null, checked: false };
+    }
+
+    const currentValor = product.units[unitIdx].plans[planIdx].valor;
+    return { row, status: "found", product, unitIdx, planIdx, currentValor, checked: true };
+  });
+
+  renderBulkReviewStep();
+}
+
+function renderBulkReviewStep() {
   bulkStep = 2;
 
-  const changedProducts = Object.keys(bulkChanges).map(id => {
-    const p = products.find(x => x.id === id);
-    if (!p) return null;
-    const unitObj = p.units.find(u => u.name === bulkUnit);
-    const planObj = unitObj ? unitObj.plans.find(pl => pl.name === bulkPlan) : null;
-    if (!planObj) return null;
-    const newVal = bulkChanges[id];
-    if (newVal === undefined || newVal === "" || Number(newVal) === planObj.valor) return null;
-    return { p, unitObj, planObj, newVal: Number(newVal) };
-  }).filter(Boolean);
+  const found   = bulkMatchedRows.filter(r => r.status === "found").length;
+  const partial = bulkMatchedRows.filter(r => r.status === "partial").length;
+  const notfound = bulkMatchedRows.filter(r => r.status === "notfound").length;
 
-  const planBadge = `<span style="font-size:12px;font-weight:600;border-radius:6px;padding:4px 10px;background:var(--neutral);color:var(--neutralText)">${bulkPlan}</span>`;
+  const summaryChips = `
+    <div class="matchSummary">
+      <span class="chipFound">${found} encontrado${found !== 1 ? "s" : ""}</span>
+      ${partial > 0 ? `<span class="chipPartial">${partial} correspondência${partial !== 1 ? "s" : ""} parcial${partial !== 1 ? "is" : ""}</span>` : ""}
+      ${notfound > 0 ? `<span class="chipNotFound">${notfound} não encontrado${notfound !== 1 ? "s" : ""}</span>` : ""}
+    </div>`;
 
-  const tableRows = changedProducts.map(({ p, planObj, newVal }) => {
-    const diff = newVal - planObj.valor;
-    const diffHtml = diff > 0
-      ? `<span class="diffPos">+R$ ${diff.toLocaleString("pt-BR")}</span>`
-      : `<span class="diffNeg">-R$ ${Math.abs(diff).toLocaleString("pt-BR")}</span>`;
+  const tableRows = bulkMatchedRows.map((m, idx) => {
+    const { row, status, product, unitIdx, planIdx, currentValor } = m;
+
+    const checkDisabled = status === "notfound" ? "disabled" : "";
+    const checkChecked  = m.checked ? "checked" : "";
+
+    // Planilha column
+    const planilhaCells = `
+      <div style="font-weight:600;font-size:14px">${row.modelo}</div>
+      <div style="color:var(--muted);font-size:12px;margin-bottom:4px">${row.capacidade} · ${row.cor}</div>
+      <span style="font-size:11px;background:var(--blue-soft);color:var(--blue-soft-text);border-radius:4px;padding:2px 7px;font-weight:600;margin-right:4px">${row.unidade}</span>
+      <span style="font-size:11px;background:var(--purple-soft);color:var(--purple-soft-text);border-radius:4px;padding:2px 7px;font-weight:600">${row.plano}</span>`;
+
+    // SKU no sistema column
+    let skuCell = "—";
+    if (status === "found" && product) {
+      skuCell = `<div style="font-weight:600">${product.name}</div><div style="color:var(--muted);font-size:12px">${product.capacity}</div>`;
+    } else if (status === "partial" && product) {
+      skuCell = `<div style="font-weight:600">${product.name}</div><div style="color:var(--muted);font-size:12px">${product.capacity} · unidade/plano não encontrado</div>`;
+    }
+
+    // Preço atual
+    const precoAtual = currentValor !== null ? `R$ ${currentValor.toLocaleString("pt-BR")}` : "—";
+
+    // Novo valor
+    const novoValor = `<strong>R$ ${row.novoValor.toLocaleString("pt-BR")}</strong>`;
+
+    // Diferença
+    let diffHtml = "—";
+    if (currentValor !== null) {
+      const diff = row.novoValor - currentValor;
+      if (diff > 0)      diffHtml = `<span class="diffPos">+R$ ${diff.toLocaleString("pt-BR")}</span>`;
+      else if (diff < 0) diffHtml = `<span class="diffNeg">-R$ ${Math.abs(diff).toLocaleString("pt-BR")}</span>`;
+      else               diffHtml = `<span style="color:var(--muted);font-size:12px">Sem alteração</span>`;
+    }
+
+    // Status chip
+    let statusChip = "";
+    if (status === "found")    statusChip = `<span class="chipFound" style="font-size:12px;padding:3px 10px">Encontrado</span>`;
+    else if (status === "partial") statusChip = `<span class="chipPartial" style="font-size:12px;padding:3px 10px">Parcial</span>`;
+    else                        statusChip = `<span class="chipNotFound" style="font-size:12px;padding:3px 10px">Não encontrado</span>`;
+
     return `
       <tr>
-        <td>
-          <div style="font-weight:600;font-size:14px">${p.name}</div>
-          <div style="color:var(--muted);font-size:12px">${p.capacity} · ${p.condition}</div>
-        </td>
-        <td><strong>${bulkUnit}</strong></td>
-        <td>${planBadge}</td>
-        <td>R$ ${planObj.valor.toLocaleString("pt-BR")}</td>
-        <td><strong style="font-size:15px">R$ ${newVal.toLocaleString("pt-BR")}</strong></td>
-        <td>${diffHtml}</td>
-        <td><span style="font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--green);color:var(--greenText)">Pronto</span></td>
+        <td style="text-align:center"><input type="checkbox" ${checkChecked} ${checkDisabled} onchange="bulkMatchedRows[${idx}].checked=this.checked;updateBulkApplyBtn()"></td>
+        <td>${planilhaCells}</td>
+        <td>${skuCell}</td>
+        <td style="white-space:nowrap">${precoAtual}</td>
+        <td style="white-space:nowrap">${novoValor}</td>
+        <td style="white-space:nowrap">${diffHtml}</td>
+        <td>${statusChip}</td>
       </tr>`;
   }).join("");
 
+  const checkedCount = bulkMatchedRows.filter(r => r.checked && (r.status === "found" || r.status === "partial")).length;
+
   document.getElementById("bulkModalContent").innerHTML = `
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px">
-      <button class="secondary" onclick="renderBulkStep1()" style="height:36px;padding:0 14px;font-size:13px">← Voltar</button>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
       <div>
-        <h2 style="display:inline">Revisar alterações</h2>
+        <h2 style="margin:0 0 6px">Análise e revisão</h2>
+        <p style="color:var(--muted);font-size:14px;margin:0">${bulkMatchedRows.length} linha${bulkMatchedRows.length !== 1 ? "s" : ""} importada${bulkMatchedRows.length !== 1 ? "s" : ""}. Revise os resultados antes de aplicar.</p>
       </div>
+      <button class="secondary" onclick="closeBulkModal()" style="height:36px;padding:0 14px;font-size:13px;flex-shrink:0;margin-left:16px">✕ Fechar</button>
     </div>
-    <p style="color:var(--muted);font-size:14px;margin:8px 0 24px">Confirme as alterações antes de aplicar. <strong>${changedProducts.length} produto${changedProducts.length !== 1 ? "s" : ""}</strong> serão atualizados.</p>
+
+    ${summaryChips}
 
     <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden">
-      <table class="miniTable" style="border:0">
+      <table class="miniTable" style="border:0;table-layout:auto">
         <thead>
           <tr>
-            <th>Produto</th>
-            <th>Unidade</th>
-            <th>Plano</th>
+            <th style="width:36px;text-align:center">
+              <input type="checkbox" id="bulkSelectAll" onchange="toggleSelectAllBulk(this.checked)"
+                ${found > 0 ? "" : "disabled"}>
+            </th>
+            <th>Planilha</th>
+            <th>SKU no sistema</th>
             <th>Preço atual</th>
             <th>Novo valor</th>
             <th>Diferença</th>
@@ -1621,38 +1610,81 @@ function renderBulkStep2() {
       </table>
     </div>
 
+    <p style="font-size:13px;color:var(--muted);margin:12px 0 0" id="bulkApplyNote">${checkedCount} de ${bulkMatchedRows.length} linha${bulkMatchedRows.length !== 1 ? "s" : ""} serão aplicadas</p>
+
     <div class="bulkActions">
-      <button class="secondary" onclick="renderBulkStep1()">← Voltar</button>
-      <button onclick="applyBulkPrices()">Aplicar ${changedProducts.length} alteraç${changedProducts.length !== 1 ? "ões" : "ão"}</button>
+      <button class="secondary" onclick="renderBulkUploadStep()">← Voltar</button>
+      <button id="bulkApplyBtn" onclick="applyBulkPrices()" ${checkedCount === 0 ? "disabled style=\"opacity:0.45;cursor:not-allowed\"" : ""}>
+        Aplicar ${checkedCount} alteraç${checkedCount !== 1 ? "ões" : "ão"}
+      </button>
     </div>`;
+
+  // Set select-all state
+  const selectAllEl = document.getElementById("bulkSelectAll");
+  if (selectAllEl && found > 0) {
+    const allFoundChecked = bulkMatchedRows.filter(r => r.status === "found").every(r => r.checked);
+    selectAllEl.checked = allFoundChecked;
+    selectAllEl.indeterminate = !allFoundChecked && bulkMatchedRows.some(r => r.checked);
+  }
+}
+
+function toggleSelectAllBulk(checked) {
+  bulkMatchedRows.forEach((m, idx) => {
+    if (m.status !== "notfound") {
+      m.checked = checked;
+      const cb = document.querySelectorAll("#bulkModalContent tbody input[type=checkbox]")[idx];
+      if (cb) cb.checked = checked;
+    }
+  });
+  updateBulkApplyBtn();
+}
+
+function updateBulkApplyBtn() {
+  const checkedCount = bulkMatchedRows.filter(r => r.checked && (r.status === "found" || r.status === "partial")).length;
+  const btn = document.getElementById("bulkApplyBtn");
+  const note = document.getElementById("bulkApplyNote");
+  if (btn) {
+    btn.textContent = `Aplicar ${checkedCount} alteraç${checkedCount !== 1 ? "ões" : "ão"}`;
+    if (checkedCount > 0) {
+      btn.removeAttribute("disabled");
+      btn.removeAttribute("style");
+    } else {
+      btn.setAttribute("disabled", "");
+      btn.setAttribute("style", "opacity:0.45;cursor:not-allowed");
+    }
+  }
+  if (note) {
+    note.textContent = `${checkedCount} de ${bulkMatchedRows.length} linha${bulkMatchedRows.length !== 1 ? "s" : ""} serão aplicadas`;
+  }
 }
 
 function applyBulkPrices() {
   const now = new Date().toLocaleDateString("pt-BR", { month: "short", year: "numeric" }).replace(".", "");
   let count = 0;
 
-  Object.keys(bulkChanges).forEach(id => {
-    const p = products.find(x => x.id === id);
-    if (!p) return;
-    const unitObj = p.units.find(u => u.name === bulkUnit);
-    if (!unitObj) return;
-    const planObj = unitObj.plans.find(pl => pl.name === bulkPlan);
-    if (!planObj) return;
-    const newVal = Number(bulkChanges[id]);
-    if (isNaN(newVal) || newVal === planObj.valor) return;
+  bulkMatchedRows.forEach(m => {
+    if (!m.checked || m.status === "notfound") return;
+    if (!m.product || m.unitIdx < 0 || m.planIdx < 0) return;
+
+    const p = m.product;
+    const unitObj = p.units[m.unitIdx];
+    const planObj = unitObj.plans[m.planIdx];
+    const newVal = m.row.novoValor;
+
+    if (isNaN(newVal)) return;
 
     // Mark old priceHistory entries for this unit+plan as not current
     p.priceHistory.forEach(h => {
-      if (h.unit === bulkUnit && h.planName === bulkPlan && h.current) {
+      if (h.unit === unitObj.name && h.planName === planObj.name && h.current) {
         h.current = false;
       }
     });
 
     // Add new history entry
     p.priceHistory.push({
-      unit: bulkUnit,
+      unit: unitObj.name,
       type: unitObj.type,
-      planName: bulkPlan,
+      planName: planObj.name,
       valor: newVal,
       referencia: planObj.referencia,
       residual: planObj.residual,
@@ -1661,7 +1693,7 @@ function applyBulkPrices() {
     });
 
     // Add to event log
-    p.history.unshift(`${now} — Preço ${bulkPlan} ${bulkUnit} atualizado em massa`);
+    p.history.unshift(`${now} — Preço ${planObj.name} ${unitObj.name} atualizado em massa`);
 
     // Update plan valor
     planObj.valor = newVal;
@@ -1679,12 +1711,12 @@ function applyBulkPrices() {
         <circle cx="12" cy="12" r="10"/>
         <path d="m9 12 2 2 4-4"/>
       </svg>
-      <p class="successTitle">${count} preço${count !== 1 ? "s" : ""} atualizado${count !== 1 ? "s" : ""}</p>
-      <p class="successSub">Unidade: ${bulkUnit} · Plano: ${bulkPlan} · ${monthCap}</p>
+      <p class="successTitle">${count} preço${count !== 1 ? "s" : ""} atualizado${count !== 1 ? "s" : ""} com sucesso</p>
+      <p class="successSub">${monthCap}</p>
       <button class="secondary" onclick="closeBulkModal()" style="margin-top:8px">Fechar</button>
     </div>`;
 
-  bulkChanges = {};
+  bulkMatchedRows = [];
 }
 </script>
 </body>
