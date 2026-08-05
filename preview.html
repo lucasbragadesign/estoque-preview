@@ -682,6 +682,31 @@ tr.unitArchived td:last-child { opacity:1; }
 .chipFound { background: var(--green); color: var(--greenText); font-size: 13px; font-weight: 600; border-radius: 999px; padding: 4px 12px; }
 .chipPartial { background: var(--amber-soft); color: var(--amber-soft-text); font-size: 13px; font-weight: 600; border-radius: 999px; padding: 4px 12px; }
 .chipNotFound { background: var(--red); color: var(--redText); font-size: 13px; font-weight: 600; border-radius: 999px; padding: 4px 12px; }
+
+/* ─── Stock behavior segmented control ───────────── */
+.stockBehaviorSeg {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.stockBehaviorSeg button {
+  height: 36px;
+  padding: 0 16px;
+  font-size: 13px;
+  border-radius: 0;
+  border: none;
+  background: var(--surface);
+  color: var(--muted);
+  font-weight: 500;
+  border-right: 1px solid var(--border);
+  transition: background 0.15s, color 0.15s;
+}
+.stockBehaviorSeg button:last-child { border-right: none; }
+.stockBehaviorSeg button:hover { background: var(--line); color: var(--text); }
+.stockBehaviorSeg button.segActive { background: var(--text); color: #fff; }
+.warnStatus { background: var(--yellow); color: var(--yellowText); }
 </style>
 </head>
 
@@ -846,7 +871,7 @@ tr.unitArchived td:last-child { opacity:1; }
   </main>
 </div>
 
-<div id="overlay" class="overlay" onclick="closeBulkModal()"></div>
+<div id="overlay" class="overlay" onclick="handleOverlayClick()"></div>
 
 <div id="bulkPriceModal" class="bulkModal">
   <div id="bulkModalContent"></div>
@@ -876,12 +901,13 @@ let stockView = "available";
 let selectedId = null;
 let selectedUnitIdx = null;
 let selectedPlanIdx = null;
+let expandedHistoryUnits = new Set();
 
 const PRIMARY = "Pitzi/Estoque - Leapfone - Osasco";
 const BROKEN  = "Pitzi/Estoque de quebrados - Leapfone - Osasco";
 
 let products = [
-  {id:"iphone-15-128-usado", name:"iPhone 15", model:"Apple iPhone 15 5G", memory:"6/128", capacity:"128GB", condition:"Usado", stockStatus:"available", location:PRIMARY, stock:17, queue:6, aging:16, price:7299, archived:false, img:"https://fdn2.gsmarena.com/vv/bigpic/apple-iphone-15.jpg",
+  {id:"iphone-15-128-usado", name:"iPhone 15", model:"Apple iPhone 15 5G", memory:"6/128", capacity:"128GB", condition:"Usado", stockStatus:"available", location:PRIMARY, stock:17, queue:6, aging:16, price:7299, stockBehavior:"auto_disable", archived:false, img:"https://fdn2.gsmarena.com/vv/bigpic/apple-iphone-15.jpg",
    colors:[{name:"Preto",qty:8,class:"black"},{name:"Azul",qty:4,class:"blue"},{name:"Verde",qty:3,class:"green"},{name:"Rosa",qty:2,class:"purple"}],
    units:[
      {name:"Leapfone",      type:"B2C",  archived:false, plans:[
@@ -906,7 +932,7 @@ let products = [
    ],
    history:["Jan 2025 — Preço Leapfone atualizado","Jun 2024 — Preço Leapfone e Empresa Alpha atualizados","Fev 2024 — SKU criado"]},
 
-  {id:"iphone-15-pro-max-256-usado", name:"iPhone 15 Pro Max", model:"Apple iPhone 15 Pro Max", memory:"8/256", capacity:"256GB", condition:"Usado", stockStatus:"available", location:PRIMARY, stock:6, queue:23, aging:23, price:11199, archived:false, img:"https://fdn2.gsmarena.com/vv/bigpic/apple-iphone-15-pro-max.jpg",
+  {id:"iphone-15-pro-max-256-usado", name:"iPhone 15 Pro Max", model:"Apple iPhone 15 Pro Max", memory:"8/256", capacity:"256GB", condition:"Usado", stockStatus:"available", location:PRIMARY, stock:6, queue:23, aging:23, price:11199, stockBehavior:"auto_disable", archived:false, img:"https://fdn2.gsmarena.com/vv/bigpic/apple-iphone-15-pro-max.jpg",
    colors:[{name:"Preto",qty:3,class:"black"},{name:"Azul",qty:1,class:"blue"},{name:"Titânio",qty:1,class:"gray"},{name:"Branco",qty:1,class:"white"}],
    units:[
      {name:"Leapfone",    type:"B2C", archived:false, plans:[
@@ -924,7 +950,7 @@ let products = [
    ],
    history:["Abr 2024 — SKU criado"]},
 
-  {id:"iphone-16-128-novo", name:"iPhone 16", model:"Apple iPhone 16", memory:"8/128", capacity:"128GB", condition:"Novo", stockStatus:"available", location:PRIMARY, stock:18, queue:11, aging:11, price:6749, archived:false, img:"https://fdn2.gsmarena.com/vv/bigpic/apple-iphone-16.jpg",
+  {id:"iphone-16-128-novo", name:"iPhone 16", model:"Apple iPhone 16", memory:"8/128", capacity:"128GB", condition:"Novo", stockStatus:"available", location:PRIMARY, stock:18, queue:11, aging:11, price:6749, stockBehavior:"keep_active", archived:false, img:"https://fdn2.gsmarena.com/vv/bigpic/apple-iphone-16.jpg",
    colors:[{name:"Verde",qty:8,class:"green"},{name:"Preto",qty:5,class:"black"},{name:"Branco",qty:3,class:"white"},{name:"Azul",qty:2,class:"blue"}],
    units:[
      {name:"Leapfone",     type:"B2C",  archived:false, plans:[
@@ -951,7 +977,7 @@ let products = [
    ],
    history:["Dez 2024 — Preço Leapfone atualizado","Set 2024 — SKU criado"]},
 
-  {id:"galaxy-s24-256-usado", name:"Galaxy S24", model:"Samsung Galaxy S24 5G", memory:"8/256", capacity:"256GB", condition:"Usado", stockStatus:"available", location:PRIMARY, stock:11, queue:11, aging:11, price:5999, archived:false, img:"https://fdn2.gsmarena.com/vv/bigpic/samsung-galaxy-s24.jpg",
+  {id:"galaxy-s24-256-usado", name:"Galaxy S24", model:"Samsung Galaxy S24 5G", memory:"8/256", capacity:"256GB", condition:"Usado", stockStatus:"available", location:PRIMARY, stock:11, queue:11, aging:11, price:5999, stockBehavior:"auto_disable", archived:false, img:"https://fdn2.gsmarena.com/vv/bigpic/samsung-galaxy-s24.jpg",
    colors:[{name:"Preto",qty:7,class:"black"},{name:"Cinza",qty:4,class:"gray"}],
    units:[
      {name:"Leapfone",     type:"B2C", archived:false, plans:[
@@ -969,7 +995,7 @@ let products = [
    ],
    history:["Mar 2024 — SKU criado"]},
 
-  {id:"galaxy-s25-ultra-512-usado", name:"Galaxy S25 Ultra", model:"Samsung Galaxy S25 Ultra 5G", memory:"12/512", capacity:"512GB", condition:"Usado", stockStatus:"available", location:PRIMARY, stock:2, queue:49, aging:49, price:12999, archived:false, img:"https://fdn2.gsmarena.com/vv/bigpic/samsung-galaxy-s25-ultra.jpg",
+  {id:"galaxy-s25-ultra-512-usado", name:"Galaxy S25 Ultra", model:"Samsung Galaxy S25 Ultra 5G", memory:"12/512", capacity:"512GB", condition:"Usado", stockStatus:"available", location:PRIMARY, stock:2, queue:49, aging:49, price:12999, stockBehavior:"auto_disable", archived:false, img:"https://fdn2.gsmarena.com/vv/bigpic/samsung-galaxy-s25-ultra.jpg",
    colors:[{name:"Preto",qty:1,class:"black"},{name:"Prata",qty:1,class:"gray"}],
    units:[
      {name:"Leapfone",    type:"B2C", archived:false, plans:[
@@ -988,7 +1014,7 @@ let products = [
    ],
    history:["Mar 2025 — Preço Leapfone atualizado","Jan 2025 — SKU criado"]},
 
-  {id:"moto-g04s-128-usado", name:"Moto G04s", model:"Motorola Moto G04s", memory:"4/128", capacity:"128GB", condition:"Usado", stockStatus:"available", location:PRIMARY, stock:32, queue:15, aging:15, price:879, archived:false, img:"https://fdn2.gsmarena.com/vv/bigpic/motorola-moto-g04s.jpg",
+  {id:"moto-g04s-128-usado", name:"Moto G04s", model:"Motorola Moto G04s", memory:"4/128", capacity:"128GB", condition:"Usado", stockStatus:"available", location:PRIMARY, stock:32, queue:15, aging:15, price:879, stockBehavior:"auto_disable", archived:false, img:"https://fdn2.gsmarena.com/vv/bigpic/motorola-moto-g04s.jpg",
    colors:[{name:"Grafite",qty:26,class:"gray"},{name:"Coral",qty:6,class:"orange"}],
    units:[
      {name:"Leapfone",type:"B2C",archived:false,plans:[
@@ -1002,7 +1028,7 @@ let products = [
    ],
    history:["Nov 2023 — SKU criado"]},
 
-  {id:"moto-g06-128-novo", name:"Moto G06", model:"Motorola Moto G06 4G", memory:"4/128", capacity:"128GB", condition:"Novo", stockStatus:"available", location:PRIMARY, stock:1, queue:148, aging:148, price:799, archived:false, img:"https://fdn2.gsmarena.com/vv/bigpic/motorola-moto-g06.jpg",
+  {id:"moto-g06-128-novo", name:"Moto G06", model:"Motorola Moto G06 4G", memory:"4/128", capacity:"128GB", condition:"Novo", stockStatus:"available", location:PRIMARY, stock:1, queue:148, aging:148, price:799, stockBehavior:"keep_active", archived:false, img:"https://fdn2.gsmarena.com/vv/bigpic/motorola-moto-g06.jpg",
    colors:[{name:"Azul-marinho",qty:1,class:"blue"}],
    units:[
      {name:"Leapfone",type:"B2C", archived:false,plans:[
@@ -1020,7 +1046,7 @@ let products = [
    ],
    history:["Ago 2024 — SKU criado"]},
 
-  {id:"iphone-13-128-quebrado", name:"iPhone 13", model:"Apple iPhone 13 5G", memory:"4/128", capacity:"128GB", condition:"Usado", stockStatus:"broken", location:BROKEN, stock:4, queue:0, aging:92, price:7599, archived:false, img:"https://fdn2.gsmarena.com/vv/bigpic/apple-iphone-13.jpg",
+  {id:"iphone-13-128-quebrado", name:"iPhone 13", model:"Apple iPhone 13 5G", memory:"4/128", capacity:"128GB", condition:"Usado", stockStatus:"broken", location:BROKEN, stock:4, queue:0, aging:92, price:7599, stockBehavior:"auto_disable", archived:false, img:"https://fdn2.gsmarena.com/vv/bigpic/apple-iphone-13.jpg",
    colors:[{name:"Preto",qty:2,class:"black"},{name:"Branco",qty:1,class:"white"}],
    units:[
      {name:"Leapfone",type:"B2C",archived:false,plans:[
@@ -1049,11 +1075,14 @@ function typeBadge(type) {
   return `<span class="unitTypeBadge ${cls}">${type}</span>`;
 }
 function statusSite(p) {
-  if (p.archived)              return `<span class="status hiddenStatus">Arquivado</span>`;
+  if (p.archived)                 return `<span class="status hiddenStatus">Arquivado</span>`;
   if (p.stockStatus === "broken") return `<span class="status hiddenStatus">Indisponível · quebrados</span>`;
-  return balance(p) <= 0
-    ? `<span class="status hiddenStatus">Oculto automático</span>`
-    : `<span class="status activeStatus">Ativo</span>`;
+  if (balance(p) <= 0) {
+    return p.stockBehavior === "keep_active"
+      ? `<span class="status warnStatus">Ativo · Sem estoque</span>`
+      : `<span class="status hiddenStatus">Oculto automático</span>`;
+  }
+  return `<span class="status activeStatus">Ativo</span>`;
 }
 
 function setStockView(v, e) {
@@ -1101,7 +1130,10 @@ function render() {
     <div class="row" onclick="openDetail('${p.id}')">
       <div class="phone">
         <div class="thumb"><img src="${p.img}" alt="${p.name}" onerror="this.style.display='none'"></div>
-        <div><div class="productName">${p.name}</div><div class="sub">${p.memory} · ${p.capacity}</div></div>
+        <div>
+          <div class="productName">${p.name}${p.stockBehavior === "keep_active" ? ` <span style="background:var(--blue-soft);color:var(--blue-soft-text);font-size:10px;font-weight:600;border-radius:4px;padding:1px 6px;vertical-align:middle;margin-left:4px">Sob encomenda</span>` : ""}</div>
+          <div class="sub">${p.memory} · ${p.capacity}</div>
+        </div>
       </div>
       <div>${p.condition}</div>
       <div>${dots(p.colors)}</div>
@@ -1192,12 +1224,11 @@ function openDetail(id) {
   const leapfoneIdx  = p.units.findIndex(u => u.type === "B2C");
   let leapfoneCardHtml = "";
   if (leapfoneUnit) {
-    const headerOpacity = 1;
-    const bodyOpacity   = leapfoneUnit.archived ? "opacity:0.45;" : "";
-    const statusPill    = leapfoneUnit.archived
+    const bodyOpacity = leapfoneUnit.archived ? "opacity:0.45;" : "";
+    const statusPill  = leapfoneUnit.archived
       ? `<span class="status hiddenStatus">Arquivado</span>`
       : `<span class="status activeStatus">Ativo</span>`;
-    const archiveBtn    = leapfoneUnit.archived
+    const archiveBtn  = leapfoneUnit.archived
       ? `<button class="unitActivateBtn" onclick="event.stopPropagation();toggleUnitArchive('${p.id}',${leapfoneIdx})">Ativar</button>`
       : `<button class="unitArchiveBtn"  onclick="event.stopPropagation();toggleUnitArchive('${p.id}',${leapfoneIdx})">Arquivar</button>`;
 
@@ -1210,8 +1241,35 @@ function openDetail(id) {
         <td style="white-space:nowrap"><button class="unitEditBtn" onclick="event.stopPropagation();openPriceDrawer('${p.id}',${leapfoneIdx},${pi})">Editar</button></td>
       </tr>`).join("");
 
+    // History section for Leapfone
+    const leapHist = p.priceHistory.filter(h => h.unit === "Leapfone");
+    const isLeapHistOpen = expandedHistoryUnits.has("Leapfone");
+    const leapHistSection = leapHist.length > 0 ? `
+      <div style="border-top:1px solid var(--line)">
+        <button class="secondary" style="width:100%;border-radius:0;border:none;border-bottom:${isLeapHistOpen ? "1px solid var(--line)" : "none"};height:36px;font-size:13px;color:var(--muted);font-weight:500;display:flex;align-items:center;justify-content:center;gap:8px" onclick="event.stopPropagation();toggleUnitHistory('${p.id}','Leapfone')">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h6l3 3 3-3h6v4H3z"/><path d="M3 7v13h18V7"/><path d="M8 12h8"/><path d="M8 16h5"/></svg>
+          ${isLeapHistOpen ? "Ocultar histórico" : "Ver histórico de preços"}
+        </button>
+        ${isLeapHistOpen ? `<table class="miniTable" style="border:0;border-top:1px solid var(--line);margin:0;border-radius:0">
+          <tr>
+            <th>Plano</th><th>Valor</th><th>Referência</th><th>Residual</th><th>Desde</th><th>Status</th>
+          </tr>
+          ${leapHist.map(h => `<tr>
+            <td style="color:var(--muted);font-size:12px">${h.planName}</td>
+            <td><strong>R$ ${h.valor.toLocaleString("pt-BR")}</strong></td>
+            <td style="color:var(--muted)">R$ ${h.referencia.toLocaleString("pt-BR")}</td>
+            <td style="color:var(--muted)">R$ ${h.residual.toLocaleString("pt-BR")}</td>
+            <td style="color:var(--muted)">${h.date}</td>
+            <td>${h.current
+              ? `<span style="font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--green);color:var(--greenText)">Atual</span>`
+              : `<span style="font-size:12px;font-weight:500;padding:3px 10px;border-radius:999px;background:var(--neutral);color:var(--neutralText)">Anterior</span>`
+            }</td>
+          </tr>`).join("")}
+        </table>` : ""}
+      </div>` : "";
+
     leapfoneCardHtml = `
-      <div style="border:1px solid var(--border);border-radius:10px;background:var(--surface);margin-bottom:20px">
+      <div style="border:1px solid var(--border);border-radius:10px;background:var(--surface);margin-bottom:20px;overflow:hidden">
         <div style="padding:16px 20px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center">
           <div style="display:flex;align-items:center;gap:10px">
             <span style="font-weight:700;font-size:15px">Leapfone</span>
@@ -1232,6 +1290,7 @@ function openDetail(id) {
             ${planRows}
           </table>
         </div>
+        ${leapHistSection}
       </div>`;
   }
 
@@ -1244,10 +1303,14 @@ function openDetail(id) {
       const statusCell = u.archived
         ? `<span class="status hiddenStatus">Arquivado</span>`
         : `<span class="status activeStatus">Ativo</span>`;
+      const isHistOpen = expandedHistoryUnits.has(u.name);
+      const histLabel  = isHistOpen ? "Ocultar" : "Histórico";
+      const histBtn    = `<button class="unitEditBtn" onclick="event.stopPropagation();toggleUnitHistory('${p.id}','${u.name}')">${histLabel}</button>`;
       const actionsCell = u.archived
-        ? `<button class="unitActivateBtn" onclick="event.stopPropagation();toggleUnitArchive('${p.id}',${i})">Ativar</button>`
-        : `<button class="unitEditBtn" onclick="event.stopPropagation();openPriceDrawer('${p.id}',${i},0)">Editar</button> <button class="unitArchiveBtn" onclick="event.stopPropagation();toggleUnitArchive('${p.id}',${i})">Arquivar</button>`;
-      return `
+        ? `<button class="unitActivateBtn" onclick="event.stopPropagation();toggleUnitArchive('${p.id}',${i})">Ativar</button> ${histBtn}`
+        : `<button class="unitEditBtn" onclick="event.stopPropagation();openPriceDrawer('${p.id}',${i},0)">Editar</button> <button class="unitArchiveBtn" onclick="event.stopPropagation();toggleUnitArchive('${p.id}',${i})">Arquivar</button> ${histBtn}`;
+
+      const mainRow = `
         <tr class="unitRow${u.archived ? ' unitArchived' : ''}">
           <td><strong>${u.name}</strong></td>
           <td>${typeBadge(u.type)}</td>
@@ -1257,6 +1320,36 @@ function openDetail(id) {
           <td>${statusCell}</td>
           <td style="white-space:nowrap">${actionsCell}</td>
         </tr>`;
+
+      const unitHistEntries = p.priceHistory.filter(h => h.unit === u.name);
+      const histExpandRow = isHistOpen && unitHistEntries.length > 0 ? `
+        <tr>
+          <td colspan="7" style="padding:0;background:var(--surface2)">
+            <table class="miniTable" style="border:0;border-top:1px solid var(--line);margin:0;border-radius:0">
+              <tr>
+                <th style="background:var(--surface2)">Plano</th>
+                <th style="background:var(--surface2)">Valor</th>
+                <th style="background:var(--surface2)">Referência</th>
+                <th style="background:var(--surface2)">Residual</th>
+                <th style="background:var(--surface2)">Desde</th>
+                <th style="background:var(--surface2)">Status</th>
+              </tr>
+              ${unitHistEntries.map(h => `<tr>
+                <td style="font-size:12px;color:var(--muted)">${h.planName}</td>
+                <td><strong>R$ ${h.valor.toLocaleString("pt-BR")}</strong></td>
+                <td style="color:var(--muted)">R$ ${h.referencia.toLocaleString("pt-BR")}</td>
+                <td style="color:var(--muted)">R$ ${h.residual.toLocaleString("pt-BR")}</td>
+                <td style="color:var(--muted)">${h.date}</td>
+                <td>${h.current
+                  ? `<span style="font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--green);color:var(--greenText)">Atual</span>`
+                  : `<span style="font-size:12px;font-weight:500;padding:3px 10px;border-radius:999px;background:var(--neutral);color:var(--neutralText)">Anterior</span>`
+                }</td>
+              </tr>`).join("")}
+            </table>
+          </td>
+        </tr>` : "";
+
+      return mainRow + histExpandRow;
     }).join("");
 
     otherUnitsHtml = `
@@ -1267,22 +1360,6 @@ function openDetail(id) {
       </table>`;
   }
 
-  // Build history table rows
-  const historyRows = p.priceHistory.map(h => {
-    return `
-        <tr>
-          <td><strong>${h.unit}</strong></td>
-          <td style="color:var(--muted);font-size:12px">${h.planName}</td>
-          <td><strong>R$ ${h.valor.toLocaleString("pt-BR")}</strong></td>
-          <td style="color:var(--muted)">R$ ${h.referencia.toLocaleString("pt-BR")}</td>
-          <td style="color:var(--muted)">R$ ${h.residual.toLocaleString("pt-BR")}</td>
-          <td style="color:var(--muted)">${h.date}</td>
-          <td>${h.current
-            ? `<span style="font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--green);color:var(--greenText)">Atual</span>`
-            : `<span style="font-size:12px;font-weight:500;padding:3px 10px;border-radius:999px;background:var(--neutral);color:var(--neutralText)">Anterior</span>`
-          }</td>
-        </tr>`;
-  }).join("");
 
   d.innerHTML = `
     <div class="back" onclick="backToList()">← Voltar para estoque</div>
@@ -1306,20 +1383,32 @@ function openDetail(id) {
           <div class="card"><span>Saldo</span><strong>${balance(p)}</strong></div>
           <div class="card"><span>Unidades ativas</span><strong>${p.units.filter(u => !u.archived).length}</strong></div>
         </section>
-        ${statusSite(p)}
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:4px">
+          ${statusSite(p)}
+          <label style="display:inline-flex;align-items:center;gap:6px;margin:0;font-weight:400;text-transform:none;letter-spacing:0;font-size:12px;color:var(--muted);cursor:default">
+            Ao zerar:
+            <select style="height:26px;border:1px solid var(--border);border-radius:6px;padding:0 8px;font-size:12px;font-weight:500;background:var(--surface);color:var(--text);font-family:inherit;cursor:pointer;outline:none" onchange="updateStockBehavior('${p.id}',this.value)">
+              <option value="auto_disable"${p.stockBehavior === "auto_disable" ? " selected" : ""}>Ocultar automaticamente</option>
+              <option value="keep_active"${p.stockBehavior === "keep_active"  ? " selected" : ""}>Manter disponível</option>
+            </select>
+          </label>
+        </div>
       </div>
     </section>
 
     <div class="detailTabs">
       <div class="detailTab active" onclick="switchTab(event,'estoque')">Estoque</div>
       <div class="detailTab" onclick="switchTab(event,'pricing')">Pricing</div>
-      <div class="detailTab" onclick="switchTab(event,'historico')">Histórico</div>
     </div>
 
     <div id="estoque" class="panel active">
       <table class="miniTable">
         <tr><th>Cor</th><th>Quantidade</th><th>Status estoque</th></tr>
-        ${p.colors.map(c => `<tr><td>${c.name}</td><td>${c.qty}</td><td>${p.stockStatus === "broken" ? "Quebrados" : "Disponível"}</td></tr>`).join("")}
+        ${p.colors.map(c => `<tr>
+          <td><div style="display:flex;align-items:center;gap:8px"><div class="colorDot ${c.class}" style="width:20px;height:20px;min-width:20px;font-size:0;line-height:1"></div>${c.name}</div></td>
+          <td>${c.qty}</td>
+          <td>${p.stockStatus === "broken" ? "Quebrados" : "Disponível"}</td>
+        </tr>`).join("")}
       </table>
     </div>
 
@@ -1327,30 +1416,21 @@ function openDetail(id) {
       ${leapfoneCardHtml}
       ${otherUnitsHtml}
       <div class="detailActions">
+        <button onclick="openAddUnitModal('${p.id}')" style="display:inline-flex;align-items:center;gap:8px">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Adicionar unidade
+        </button>
         <button class="secondary" onclick="archiveSku('${p.id}')">Arquivar SKU</button>
       </div>
-    </div>
-
-    <div id="historico" class="panel">
-      <p style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin:0 0 10px">Mensalidades praticadas</p>
-      <table class="miniTable" style="margin-bottom:28px">
-        <tr>
-          <th>Unidade</th>
-          <th>Plano</th>
-          <th>Valor</th>
-          <th>Referência</th>
-          <th>Residual</th>
-          <th>Desde</th>
-          <th>Status</th>
-        </tr>
-        ${historyRows}
-      </table>
+      <hr style="border:none;border-top:1px solid var(--line);margin:28px 0 20px">
       <p style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin:0 0 10px">Eventos</p>
       <table class="miniTable">
         <tr><th>Descrição</th></tr>
         ${p.history.map(h => `<tr><td style="color:var(--muted)">${h}</td></tr>`).join("")}
       </table>
-    </div>`;
+    </div>
+
+`;
 }
 
 function backToList() {
@@ -1358,6 +1438,49 @@ function backToList() {
   document.getElementById("detailPage").innerHTML = "";
   document.getElementById("listPage").style.display = "block";
   render();
+}
+
+function toggleStockBehavior(id, value) {
+  const p = products.find(x => x.id === id);
+  p.stockBehavior = value;
+  openDetail(id);
+}
+
+function updateStockBehavior(id, value) {
+  const p = products.find(x => x.id === id);
+  if (!p) return;
+  p.stockBehavior = value;
+  const wasOnPricing = document.getElementById("pricing")?.classList.contains("active");
+  openDetail(id);
+  if (wasOnPricing) {
+    setTimeout(() => {
+      document.querySelectorAll(".detailTab").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".panel").forEach(pan => pan.classList.remove("active"));
+      const tabs = document.querySelectorAll(".detailTab");
+      if (tabs[1]) tabs[1].classList.add("active");
+      const pp = document.getElementById("pricing");
+      if (pp) pp.classList.add("active");
+    }, 10);
+  }
+}
+
+function toggleUnitHistory(productId, unitName) {
+  if (expandedHistoryUnits.has(unitName)) {
+    expandedHistoryUnits.delete(unitName);
+  } else {
+    expandedHistoryUnits.add(unitName);
+  }
+  openDetail(productId);
+  // Stay on pricing tab
+  setTimeout(() => {
+    const tabs   = document.querySelectorAll(".detailTab");
+    const panels = document.querySelectorAll(".panel");
+    tabs.forEach(t   => t.classList.remove("active"));
+    panels.forEach(pan => pan.classList.remove("active"));
+    if (tabs[1]) tabs[1].classList.add("active");
+    const pPanel = document.getElementById("pricing");
+    if (pPanel) pPanel.classList.add("active");
+  }, 10);
 }
 function switchTab(e, id) {
   document.querySelectorAll(".detailTab").forEach(t => t.classList.remove("active"));
@@ -1368,17 +1491,149 @@ function switchTab(e, id) {
 
 render();
 
+// ─── Add Unit Modal ────────────────────────────────────
+let addUnitProductId = null;
+
+const ALL_UNITS_CATALOG = [
+  { name: "Leapfone",      type: "B2C",  plans: ["Mensal","Anual","BB"] },
+  { name: "Empresa Alpha", type: "B2B",  plans: ["Mensal"] },
+  { name: "Empresa Beta",  type: "B2B",  plans: ["Mensal"] },
+  { name: "BYOD",          type: "BYOD", plans: ["Mensal"] },
+];
+
+function handleOverlayClick() {
+  if (document.getElementById("bulkPriceModal").classList.contains("open")) closeBulkModal();
+  if (document.getElementById("addUnitModal").classList.contains("open")) closeAddUnitModal();
+}
+
+function openAddUnitModal(productId) {
+  addUnitProductId = productId;
+  const p = products.find(x => x.id === productId);
+  const existingNames = new Set(p.units.map(u => u.name));
+  const available = ALL_UNITS_CATALOG.filter(u => !existingNames.has(u.name));
+
+  const content = document.getElementById("addUnitModalContent");
+  const modal   = document.getElementById("addUnitModal");
+  const overlay = document.getElementById("overlay");
+
+  if (available.length === 0) {
+    content.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <h2 style="margin:0">Adicionar unidade</h2>
+        <button class="secondary" onclick="closeAddUnitModal()" style="height:36px;padding:0 14px;font-size:13px">✕ Fechar</button>
+      </div>
+      <p style="color:var(--muted)">Este SKU já está disponível em todas as unidades.</p>`;
+    modal.classList.add("open");
+    overlay.classList.add("open");
+    return;
+  }
+
+  content.innerHTML = buildAddUnitForm(p, available);
+  modal.classList.add("open");
+  overlay.classList.add("open");
+}
+
+function buildAddUnitForm(p, available) {
+  const firstUnit = available[0];
+  return `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <h2 style="margin:0">Adicionar unidade</h2>
+      <button class="secondary" onclick="closeAddUnitModal()" style="height:36px;padding:0 14px;font-size:13px">✕ Fechar</button>
+    </div>
+    <p style="color:var(--muted);font-size:13px;margin:0 0 20px">${p.name} · ${p.capacity} · ${p.condition}</p>
+
+    <div class="field">
+      <label for="addUnitSel">Unidade</label>
+      <select id="addUnitSel" onchange="refreshAddUnitPlans()">
+        ${available.map(u => `<option value="${u.name}" data-type="${u.type}" data-plans="${u.plans.join(',')}">${u.name} · ${u.type}</option>`).join("")}
+      </select>
+    </div>
+
+    <div id="addUnitPlanFields">
+      ${buildPlanInputs(firstUnit.plans, p.price)}
+    </div>
+
+    <div style="display:flex;justify-content:flex-end;gap:12px;margin-top:24px;padding-top:20px;border-top:1px solid var(--line)">
+      <button class="secondary" onclick="closeAddUnitModal()">Cancelar</button>
+      <button onclick="saveAddUnit()">Adicionar unidade</button>
+    </div>`;
+}
+
+function buildPlanInputs(plans, defaultRef) {
+  return plans.map(pl => `
+    <div class="field" style="margin-bottom:20px">
+      <div style="font-weight:600;font-size:13px;margin-bottom:10px;color:var(--text)">${pl}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+        <div><label>Valor (R$)</label><input type="number" id="addPlan_${pl}_valor" placeholder="Ex: 219" min="0"></div>
+        <div><label>Referência (R$)</label><input type="number" id="addPlan_${pl}_ref" value="${defaultRef}" min="0"></div>
+        <div><label>Residual (R$)</label><input type="number" id="addPlan_${pl}_res" placeholder="Ex: 2500" min="0"></div>
+      </div>
+    </div>`).join("");
+}
+
+function refreshAddUnitPlans() {
+  const sel     = document.getElementById("addUnitSel");
+  const selOpt  = sel.options[sel.selectedIndex];
+  const plans   = selOpt.dataset.plans.split(",");
+  const p       = products.find(x => x.id === addUnitProductId);
+  document.getElementById("addUnitPlanFields").innerHTML = buildPlanInputs(plans, p ? p.price : 0);
+}
+
+function closeAddUnitModal() {
+  document.getElementById("addUnitModal").classList.remove("open");
+  document.getElementById("overlay").classList.remove("open");
+  addUnitProductId = null;
+}
+
+function saveAddUnit() {
+  if (!addUnitProductId) return;
+  const pId = addUnitProductId;
+  const p   = products.find(x => x.id === pId);
+  if (!p) return;
+
+  const sel    = document.getElementById("addUnitSel");
+  const selOpt = sel.options[sel.selectedIndex];
+  const unitName = sel.value;
+  const unitType = selOpt.dataset.type;
+  const plans  = selOpt.dataset.plans.split(",");
+
+  const planObjs = plans.map(pl => {
+    const valor      = Number(document.getElementById(`addPlan_${pl}_valor`)?.value) || 0;
+    const referencia = Number(document.getElementById(`addPlan_${pl}_ref`)?.value)   || p.price;
+    const residual   = Number(document.getElementById(`addPlan_${pl}_res`)?.value)   || 0;
+    return { name: pl, valor, referencia, residual };
+  });
+
+  p.units.push({ name: unitName, type: unitType, archived: false, plans: planObjs });
+
+  const now = new Date().toLocaleDateString("pt-BR",{month:"short",year:"numeric"}).replace(".","");
+  p.history.unshift(`${now} — ${unitName} adicionado ao SKU`);
+
+  closeAddUnitModal();
+
+  openDetail(pId);
+  // Switch to pricing tab after re-render
+  setTimeout(() => {
+    const tabs   = document.querySelectorAll(".detailTab");
+    const panels = document.querySelectorAll(".panel");
+    tabs.forEach(t   => t.classList.remove("active"));
+    panels.forEach(pan => pan.classList.remove("active"));
+    if (tabs[1]) tabs[1].classList.add("active");
+    const pPanel = document.getElementById("pricing");
+    if (pPanel) pPanel.classList.add("active");
+  }, 10);
+}
+
 // ─── Bulk Price Edit (Upload + Match flow) ─────────────
 let bulkStep = 1;
 let bulkMatchedRows = [];
 
 const BULK_SAMPLE_ROWS = [
-  { modelo: "iPhone 15",  capacidade: "128GB", cor: "Preto",   unidade: "Leapfone",       plano: "Mensal", novoValor: 229 },
-  { modelo: "iPhone 15",  capacidade: "128GB", cor: "Verde",   unidade: "Leapfone",       plano: "Mensal", novoValor: 229 },
-  { modelo: "iPhone 16",  capacidade: "128GB", cor: "Preto",   unidade: "Leapfone",       plano: "Anual",  novoValor: 259 },
-  { modelo: "iPhone 14",  capacidade: "256GB", cor: "Azul",    unidade: "Empresa Alpha",  plano: "Mensal", novoValor: 179 },
-  { modelo: "Moto G84",   capacidade: "128GB", cor: "Grafite", unidade: "Leapfone",       plano: "Mensal", novoValor: 99  },
-  { modelo: "iPhone 99",  capacidade: "512GB", cor: "Roxo",    unidade: "Leapfone",       plano: "Mensal", novoValor: 350 }
+  ['iPhone 15', '128GB', 'Preto',   'Usado', 229, 'Não'],
+  ['iPhone 15', '128GB', 'Verde',   'Usado', 229, 'Não'],
+  ['iPhone 15', '128GB', 'Amarelo', 'Usado', 225, 'Não'],
+  ['iPhone 15', '128GB', 'Rosé',    'Novo',  289, 'Sim'],
+  ['iPhone 99', '512GB', 'Roxo',    'Novo',  350, 'Sim'],
 ];
 
 function openBulkModal() {
@@ -1406,6 +1661,28 @@ function renderBulkUploadStep() {
       <button class="secondary" onclick="closeBulkModal()" style="height:36px;padding:0 14px;font-size:13px;flex-shrink:0;margin-left:16px">✕ Fechar</button>
     </div>
 
+    <div style="display:flex;gap:16px;margin-bottom:0">
+      <div style="flex:1">
+        <label for="bulkUnitSel">Unidade</label>
+        <select id="bulkUnitSel" onchange="updateBulkPlanSel()">
+          <option value="Leapfone">Leapfone</option>
+          <option value="Empresa Alpha">Empresa Alpha</option>
+          <option value="Empresa Beta">Empresa Beta</option>
+          <option value="BYOD">BYOD</option>
+        </select>
+      </div>
+      <div style="flex:1">
+        <label for="bulkPlanSel">Plano</label>
+        <select id="bulkPlanSel">
+          <option value="Mensal">Mensal</option>
+          <option value="Anual">Anual</option>
+          <option value="BB">BB</option>
+        </select>
+      </div>
+    </div>
+
+    <hr style="border:none;border-top:1px solid var(--border);margin:20px 0">
+
     <label style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;display:block">Arquivo</label>
     <div class="dropZone" onclick="document.getElementById('csvFileInput').click()"
          ondragover="event.preventDefault();this.style.borderColor='var(--blue)';this.style.background='var(--blue-soft)'"
@@ -1425,15 +1702,29 @@ function renderBulkUploadStep() {
       <span>Modelo</span>
       <span>Capacidade</span>
       <span>Cor</span>
-      <span>Unidade</span>
-      <span>Plano</span>
-      <span>Novo Valor</span>
+      <span>Condição</span>
+      <span>Novo Valor (R$)</span>
+      <span>Upgrade Only</span>
     </div>
 
     <div class="bulkActions" style="justify-content:space-between">
       <button class="secondary" onclick="loadSampleData()">Usar dados de exemplo</button>
       <button class="secondary" onclick="closeBulkModal()">Cancelar</button>
     </div>`;
+}
+
+function updateBulkPlanSel() {
+  const unitSel = document.getElementById("bulkUnitSel");
+  const planSel = document.getElementById("bulkPlanSel");
+  if (!unitSel || !planSel) return;
+  if (unitSel.value === "Leapfone") {
+    planSel.innerHTML = `<option value="Mensal">Mensal</option><option value="Anual">Anual</option><option value="BB">BB</option>`;
+    planSel.removeAttribute("disabled");
+  } else {
+    planSel.innerHTML = `<option value="Mensal">Mensal</option>`;
+    planSel.value = "Mensal";
+    planSel.setAttribute("disabled", "disabled");
+  }
 }
 
 function handleFileDrop(event) {
@@ -1454,12 +1745,12 @@ function readCsvFile(file) {
     const rows = lines.map(line => {
       const parts = line.split(",");
       return {
-        modelo:     (parts[0] || "").trim(),
-        capacidade: (parts[1] || "").trim(),
-        cor:        (parts[2] || "").trim(),
-        unidade:    (parts[3] || "").trim(),
-        plano:      (parts[4] || "").trim(),
-        novoValor:  Number((parts[5] || "0").trim())
+        modelo:      (parts[0] || "").trim(),
+        capacidade:  (parts[1] || "").trim(),
+        cor:         (parts[2] || "").trim(),
+        condicao:    (parts[3] || "").trim(),
+        novoValor:   Number((parts[4] || "0").trim()),
+        upgradeOnly: (parts[5] || "Não").trim()
       };
     }).filter(r => r.modelo && r.capacidade);
     runBulkMatch(rows);
@@ -1468,10 +1759,21 @@ function readCsvFile(file) {
 }
 
 function loadSampleData() {
-  runBulkMatch(BULK_SAMPLE_ROWS);
+  const rows = BULK_SAMPLE_ROWS.map(r => ({
+    modelo:      r[0],
+    capacidade:  r[1],
+    cor:         r[2],
+    condicao:    r[3],
+    novoValor:   r[4],
+    upgradeOnly: r[5] || "Não"
+  }));
+  runBulkMatch(rows);
 }
 
 function runBulkMatch(rows) {
+  const selectedUnit = document.getElementById("bulkUnitSel") ? document.getElementById("bulkUnitSel").value : "Leapfone";
+  const selectedPlan = document.getElementById("bulkPlanSel") ? document.getElementById("bulkPlanSel").value : "Mensal";
+
   bulkMatchedRows = rows.map(row => {
     const modeloLC = row.modelo.toLowerCase();
 
@@ -1482,28 +1784,33 @@ function runBulkMatch(rows) {
     });
 
     if (!product) {
-      return { row, status: "notfound", product: null, unitIdx: -1, planIdx: -1, currentValor: null, checked: false };
+      return { row, selectedUnit, selectedPlan, status: "notfound", product: null, unitIdx: -1, planIdx: -1, currentValor: null, checked: false };
     }
 
     // Step 2: check capacity
     if (product.capacity.toLowerCase() !== row.capacidade.toLowerCase()) {
-      return { row, status: "notfound", product: null, unitIdx: -1, planIdx: -1, currentValor: null, checked: false };
+      return { row, selectedUnit, selectedPlan, status: "notfound", product: null, unitIdx: -1, planIdx: -1, currentValor: null, checked: false };
     }
 
-    // Step 3: find unit
-    const unitIdx = product.units.findIndex(u => u.name === row.unidade);
+    // Step 2b: check condition (if provided) — mismatch → partial
+    if (row.condicao && product.condition.trim().toLowerCase() !== row.condicao.trim().toLowerCase()) {
+      return { row, selectedUnit, selectedPlan, status: "partial", product, unitIdx: -1, planIdx: -1, currentValor: null, checked: false };
+    }
+
+    // Step 3: find unit using selected unit
+    const unitIdx = product.units.findIndex(u => u.name === selectedUnit);
     if (unitIdx === -1) {
-      return { row, status: "partial", product, unitIdx: -1, planIdx: -1, currentValor: null, checked: false };
+      return { row, selectedUnit, selectedPlan, status: "partial", product, unitIdx: -1, planIdx: -1, currentValor: null, checked: false };
     }
 
-    // Step 4: find plan
-    const planIdx = product.units[unitIdx].plans.findIndex(pl => pl.name === row.plano);
+    // Step 4: find plan using selected plan
+    const planIdx = product.units[unitIdx].plans.findIndex(pl => pl.name === selectedPlan);
     if (planIdx === -1) {
-      return { row, status: "partial", product, unitIdx, planIdx: -1, currentValor: null, checked: false };
+      return { row, selectedUnit, selectedPlan, status: "partial", product, unitIdx, planIdx: -1, currentValor: null, checked: false };
     }
 
     const currentValor = product.units[unitIdx].plans[planIdx].valor;
-    return { row, status: "found", product, unitIdx, planIdx, currentValor, checked: true };
+    return { row, selectedUnit, selectedPlan, status: "found", product, unitIdx, planIdx, currentValor, checked: true };
   });
 
   renderBulkReviewStep();
@@ -1515,6 +1822,19 @@ function renderBulkReviewStep() {
   const found   = bulkMatchedRows.filter(r => r.status === "found").length;
   const partial = bulkMatchedRows.filter(r => r.status === "partial").length;
   const notfound = bulkMatchedRows.filter(r => r.status === "notfound").length;
+
+  // Read context from first matched row (all rows share the same unit/plan)
+  const ctxUnit = bulkMatchedRows.length > 0 ? bulkMatchedRows[0].selectedUnit : "";
+  const ctxPlan = bulkMatchedRows.length > 0 ? bulkMatchedRows[0].selectedPlan : "";
+  const chipStyle = `style="background:var(--blue-soft);color:var(--blue-soft-text);font-size:12px;font-weight:600;border-radius:6px;padding:3px 10px;"`;
+  const contextBadge = `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+      <span style="color:var(--muted);font-size:13px">Unidade:</span>
+      <span ${chipStyle}>${ctxUnit}</span>
+      <span style="color:var(--muted);font-size:13px;margin-left:4px">Plano:</span>
+      <span ${chipStyle}>${ctxPlan}</span>
+      <span style="color:var(--muted);font-size:13px;margin-left:4px">${found} produto${found !== 1 ? "s" : ""} encontrado${found !== 1 ? "s" : ""}</span>
+    </div>`;
 
   const summaryChips = `
     <div class="matchSummary">
@@ -1529,12 +1849,15 @@ function renderBulkReviewStep() {
     const checkDisabled = status === "notfound" ? "disabled" : "";
     const checkChecked  = m.checked ? "checked" : "";
 
-    // Planilha column
+    // Planilha column — show model + capacity + color + condição chip
+    const condicaoChip = row.condicao
+      ? (row.condicao.toLowerCase() === "novo"
+          ? `<span style="background:var(--blue-soft);color:var(--blue-soft-text);font-size:11px;font-weight:600;border-radius:4px;padding:2px 7px;">${row.condicao}</span>`
+          : `<span style="background:var(--amber-soft);color:var(--amber-soft-text);font-size:11px;font-weight:600;border-radius:4px;padding:2px 7px;">${row.condicao}</span>`)
+      : "";
     const planilhaCells = `
       <div style="font-weight:600;font-size:14px">${row.modelo}</div>
-      <div style="color:var(--muted);font-size:12px;margin-bottom:4px">${row.capacidade} · ${row.cor}</div>
-      <span style="font-size:11px;background:var(--blue-soft);color:var(--blue-soft-text);border-radius:4px;padding:2px 7px;font-weight:600;margin-right:4px">${row.unidade}</span>
-      <span style="font-size:11px;background:var(--purple-soft);color:var(--purple-soft-text);border-radius:4px;padding:2px 7px;font-weight:600">${row.plano}</span>`;
+      <div style="color:var(--muted);font-size:12px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">${row.capacidade} · ${row.cor} ${condicaoChip}</div>`;
 
     // SKU no sistema column
     let skuCell = "—";
@@ -1565,6 +1888,12 @@ function renderBulkReviewStep() {
     else if (status === "partial") statusChip = `<span class="chipPartial" style="font-size:12px;padding:3px 10px">Parcial</span>`;
     else                        statusChip = `<span class="chipNotFound" style="font-size:12px;padding:3px 10px">Não encontrado</span>`;
 
+    // Upgrade Only badge
+    const upgradeOnlyVal = (row.upgradeOnly || "Não").toLowerCase();
+    const upgradeOnlyBadge = (upgradeOnlyVal === "sim" || upgradeOnlyVal === "true")
+      ? `<span style="background:var(--purple-soft);color:var(--purple-soft-text);font-size:12px;font-weight:600;border-radius:4px;padding:3px 8px">Sim</span>`
+      : `<span style="color:var(--muted);font-size:13px">Não</span>`;
+
     return `
       <tr>
         <td style="text-align:center"><input type="checkbox" ${checkChecked} ${checkDisabled} onchange="bulkMatchedRows[${idx}].checked=this.checked;updateBulkApplyBtn()"></td>
@@ -1574,6 +1903,7 @@ function renderBulkReviewStep() {
         <td style="white-space:nowrap">${novoValor}</td>
         <td style="white-space:nowrap">${diffHtml}</td>
         <td>${statusChip}</td>
+        <td style="text-align:center">${upgradeOnlyBadge}</td>
       </tr>`;
   }).join("");
 
@@ -1587,6 +1917,8 @@ function renderBulkReviewStep() {
       </div>
       <button class="secondary" onclick="closeBulkModal()" style="height:36px;padding:0 14px;font-size:13px;flex-shrink:0;margin-left:16px">✕ Fechar</button>
     </div>
+
+    ${contextBadge}
 
     ${summaryChips}
 
@@ -1604,6 +1936,7 @@ function renderBulkReviewStep() {
             <th>Novo valor</th>
             <th>Diferença</th>
             <th>Status</th>
+            <th>Upgrade Only</th>
           </tr>
         </thead>
         <tbody>${tableRows}</tbody>
@@ -1719,5 +2052,9 @@ function applyBulkPrices() {
   bulkMatchedRows = [];
 }
 </script>
+<div id="addUnitModal" class="modal" style="max-width:680px;width:92vw">
+  <div id="addUnitModalContent"></div>
+</div>
+
 </body>
 </html>
