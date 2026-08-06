@@ -1147,6 +1147,8 @@ function render() {
 function toggleUnitArchive(productId, unitIdx) {
   const p = products.find(x => x.id === productId);
   const u = p.units[unitIdx];
+  const action = u.archived ? "Ativar" : "Arquivar";
+  if (!confirm(`${action} "${u.name}" para ${p.name} ${p.capacity} ${p.condition}?`)) return;
   u.archived = !u.archived;
   openDetail(productId);
 }
@@ -1385,7 +1387,7 @@ function openDetail(id) {
         </section>
         <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:4px">
           ${statusSite(p)}
-          <label style="display:inline-flex;align-items:center;gap:6px;margin:0;font-weight:400;text-transform:none;letter-spacing:0;font-size:12px;color:var(--muted);cursor:default">
+          <label style="display:inline-flex;align-items:center;gap:6px;margin:0;font-weight:400;text-transform:none;letter-spacing:0;font-size:12px;color:var(--muted);cursor:default;white-space:nowrap">
             Ao zerar:
             <select style="height:26px;border:1px solid var(--border);border-radius:6px;padding:0 8px;font-size:12px;font-weight:500;background:var(--surface);color:var(--text);font-family:inherit;cursor:pointer;outline:none" onchange="updateStockBehavior('${p.id}',this.value)">
               <option value="auto_disable"${p.stockBehavior === "auto_disable" ? " selected" : ""}>Ocultar automaticamente</option>
@@ -1449,6 +1451,13 @@ function toggleStockBehavior(id, value) {
 function updateStockBehavior(id, value) {
   const p = products.find(x => x.id === id);
   if (!p) return;
+  const label = value === "keep_active" ? "Manter disponível" : "Ocultar automaticamente";
+  if (!confirm(`Alterar comportamento ao zerar para "${label}"?`)) {
+    // Revert the select visually
+    const sel = document.querySelector('select[onchange*="updateStockBehavior"]');
+    if (sel) sel.value = p.stockBehavior;
+    return;
+  }
   p.stockBehavior = value;
   const wasOnPricing = document.getElementById("pricing")?.classList.contains("active");
   openDetail(id);
