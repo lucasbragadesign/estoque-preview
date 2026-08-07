@@ -1147,10 +1147,15 @@ function render() {
 function toggleUnitArchive(productId, unitIdx) {
   const p = products.find(x => x.id === productId);
   const u = p.units[unitIdx];
-  const action = u.archived ? "Ativar" : "Arquivar";
-  if (!confirm(`${action} "${u.name}" para ${p.name} ${p.capacity} ${p.condition}?`)) return;
-  u.archived = !u.archived;
-  openDetail(productId);
+  const isArchiving = !u.archived;
+  const title   = isArchiving ? "Arquivar unidade" : "Ativar unidade";
+  const message = isArchiving
+    ? `"${u.name}" ficará oculto para ${p.name} ${p.capacity} ${p.condition}. Você pode reativar depois.`
+    : `"${u.name}" voltará a estar ativo para ${p.name} ${p.capacity} ${p.condition}.`;
+  showConfirm(title, message, () => {
+    u.archived = !u.archived;
+    openDetail(productId);
+  }, { danger: isArchiving });
 }
 
 function openPriceDrawer(id, unitIdx, planIdx) {
@@ -1207,11 +1212,16 @@ function savePrice() {
 
 function archiveSku(id) {
   const p = products.find(x => x.id === id);
-  if (confirm(`Arquivar ${p.name} ${p.capacity} ${p.condition}?`)) {
-    p.archived = true;
-    p.history.unshift("SKU arquivado manualmente");
-    backToList();
-  }
+  showConfirm(
+    "Arquivar SKU",
+    `${p.name} ${p.capacity} ${p.condition} ficará oculto do estoque. Você pode reativar depois.`,
+    () => {
+      p.archived = true;
+      p.history.unshift("SKU arquivado manualmente");
+      backToList();
+    },
+    { danger: true }
+  );
 }
 
 
@@ -1451,26 +1461,28 @@ function toggleStockBehavior(id, value) {
 function updateStockBehavior(id, value) {
   const p = products.find(x => x.id === id);
   if (!p) return;
-  const label = value === "keep_active" ? "Manter disponível" : "Ocultar automaticamente";
-  if (!confirm(`Alterar comportamento ao zerar para "${label}"?`)) {
-    // Revert the select visually
-    const sel = document.querySelector('select[onchange*="updateStockBehavior"]');
-    if (sel) sel.value = p.stockBehavior;
-    return;
-  }
-  p.stockBehavior = value;
-  const wasOnPricing = document.getElementById("pricing")?.classList.contains("active");
-  openDetail(id);
-  if (wasOnPricing) {
-    setTimeout(() => {
-      document.querySelectorAll(".detailTab").forEach(t => t.classList.remove("active"));
-      document.querySelectorAll(".panel").forEach(pan => pan.classList.remove("active"));
-      const tabs = document.querySelectorAll(".detailTab");
-      if (tabs[1]) tabs[1].classList.add("active");
-      const pp = document.getElementById("pricing");
-      if (pp) pp.classList.add("active");
-    }, 10);
-  }
+  // Revert select visually — will re-render correctly on confirm
+  const sel = document.querySelector('select[onchange*="updateStockBehavior"]');
+  if (sel) sel.value = p.stockBehavior;
+  const label   = value === "keep_active" ? "Manter disponível" : "Ocultar automaticamente";
+  const message = value === "keep_active"
+    ? "O modelo continuará visível no site mesmo quando o saldo chegar a zero."
+    : "O modelo será ocultado automaticamente do site quando o saldo chegar a zero.";
+  showConfirm("Alterar comportamento ao zerar", message, () => {
+    p.stockBehavior = value;
+    const wasOnPricing = document.getElementById("pricing")?.classList.contains("active");
+    openDetail(id);
+    if (wasOnPricing) {
+      setTimeout(() => {
+        document.querySelectorAll(".detailTab").forEach(t => t.classList.remove("active"));
+        document.querySelectorAll(".panel").forEach(pan => pan.classList.remove("active"));
+        const tabs = document.querySelectorAll(".detailTab");
+        if (tabs[1]) tabs[1].classList.add("active");
+        const pp = document.getElementById("pricing");
+        if (pp) pp.classList.add("active");
+      }, 10);
+    }
+  });
 }
 
 function toggleUnitHistory(productId, unitName) {
@@ -1513,6 +1525,7 @@ const ALL_UNITS_CATALOG = [
 function handleOverlayClick() {
   if (document.getElementById("bulkPriceModal").classList.contains("open")) closeBulkModal();
   if (document.getElementById("addUnitModal").classList.contains("open")) closeAddUnitModal();
+  if (document.getElementById("confirmModal").classList.contains("open")) closeConfirmModal();
 }
 
 function openAddUnitModal(productId) {
@@ -1631,6 +1644,34 @@ function saveAddUnit() {
     const pPanel = document.getElementById("pricing");
     if (pPanel) pPanel.classList.add("active");
   }, 10);
+}
+
+// ─── Confirm Modal ─────────────────────────────────────
+let _confirmCallback = null;
+
+function showConfirm(title, message, onConfirm, { danger = false } = {}) {
+  _confirmCallback = onConfirm;
+  document.getElementById("confirmModalContent").innerHTML = `
+    <h2 style="margin:0 0 8px;font-size:18px;font-weight:700">${title}</h2>
+    <p style="color:var(--muted);font-size:14px;margin:0 0 24px;line-height:1.5">${message}</p>
+    <div style="display:flex;justify-content:flex-end;gap:10px">
+      <button class="secondary" onclick="closeConfirmModal()">Cancelar</button>
+      <button id="confirmOkBtn" style="${danger ? "background:#B3261E" : ""}" onclick="runConfirm()">Confirmar</button>
+    </div>`;
+  document.getElementById("confirmModal").classList.add("open");
+  document.getElementById("overlay").classList.add("open");
+}
+
+function runConfirm() {
+  closeConfirmModal();
+  if (_confirmCallback) _confirmCallback();
+  _confirmCallback = null;
+}
+
+function closeConfirmModal() {
+  document.getElementById("confirmModal").classList.remove("open");
+  document.getElementById("overlay").classList.remove("open");
+  _confirmCallback = null;
 }
 
 // ─── Bulk Price Edit (Upload + Match flow) ─────────────
@@ -2063,6 +2104,10 @@ function applyBulkPrices() {
 </script>
 <div id="addUnitModal" class="modal" style="max-width:680px;width:92vw">
   <div id="addUnitModalContent"></div>
+</div>
+
+<div id="confirmModal" class="modal" style="max-width:420px;width:92vw;z-index:25">
+  <div id="confirmModalContent"></div>
 </div>
 
 </body>
